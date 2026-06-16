@@ -1,0 +1,62 @@
+name: Build ISO
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'archiso/**'
+      - 'dotfiles/**'
+      - 'scripts/**'
+      - 'installer/**'
+  pull_request:
+    paths:
+      - 'archiso/**'
+
+jobs:
+  build:
+    name: Build HarnessOS ISO
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update system and install archiso
+        run: |
+          pacman -Sy --noconfirm archiso mkinitcpio-archiso
+
+      - name: Validate profiledef.sh
+        run: bash -n archiso/profiledef.sh
+
+      - name: Build ISO
+        run: |
+          mkdir -p out
+          mkarchiso -v -w /tmp/harness-work -o ./out ./archiso
+
+      - name: Get ISO info
+        run: |
+          ISO=$(find out -name "*.iso" | head -1)
+          echo "ISO_FILE=${ISO}" >> $GITHUB_ENV
+          echo "ISO_SIZE=$(du -sh ${ISO} | cut -f1)" >> $GITHUB_ENV
+          sha256sum "${ISO}" > "${ISO}.sha256"
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: harnessOS-iso-${{ github.sha }}
+          path: |
+            out/*.iso
+            out/*.sha256
+          retention-days: 7
+
+      - name: Build summary
+        run: |
+          echo "## Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ISO | \`${{ env.ISO_FILE }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Size | ${{ env.ISO_SIZE }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY

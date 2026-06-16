@@ -1,0 +1,58 @@
+/* HarnessOS — Wofi Launcher Style (Tokyo Night) */
+
+window {
+    background-color: rgba(26, 27, 38, 0.95);
+    border: 2px solid rgba(122, 162, 247, 0.4);
+    border-radius: 12px;
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 14px;
+}
+
+#input {
+    color: #c0caf5;
+    background-color: rgba(36, 40, 59, 0.9);
+    border: 1px solid rgba(122, 162, 247, 0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 8px;
+    outline: none;
+}
+
+#input:focus {
+    border-color: rgba(122, 162, 247, 0.8);
+}
+
+#inner-box {
+    background: transparent;
+}
+
+#outer-box {
+    padding: 8px;
+}
+
+#scroll {
+    margin: 4px 0;
+}
+
+#entry {
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin: 2px 4px;
+}
+
+#entry:selected {
+    background-color: rgba(122, 162, 247, 0.2);
+    border: 1px solid rgba(122, 162, 247, 0.4);
+}
+
+#entry:selected #text {
+    color: #7aa2f7;
+}
+
+#text {
+    color: #c0caf5;
+}
+
+#img {
+    margin-right: 8px;
+}

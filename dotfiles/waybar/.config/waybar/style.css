@@ -1,0 +1,137 @@
+/* HarnessOS — Waybar Style
+   Tokyo Night color palette */
+
+* {
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 13px;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+}
+
+window#waybar {
+    background: rgba(26, 27, 38, 0.92);
+    color: #c0caf5;
+    border-bottom: 2px solid rgba(122, 162, 247, 0.3);
+    border-radius: 8px;
+}
+
+.modules-left,
+.modules-center,
+.modules-right {
+    padding: 0 6px;
+}
+
+/* Workspaces */
+#workspaces button {
+    padding: 2px 8px;
+    color: #565f89;
+    background: transparent;
+    border-radius: 6px;
+    margin: 4px 2px;
+    transition: all 0.2s ease;
+}
+
+#workspaces button:hover {
+    color: #c0caf5;
+    background: rgba(122, 162, 247, 0.15);
+}
+
+#workspaces button.active {
+    color: #7aa2f7;
+    background: rgba(122, 162, 247, 0.2);
+}
+
+#workspaces button.urgent {
+    color: #f7768e;
+    background: rgba(247, 118, 142, 0.15);
+}
+
+/* Window title */
+#window {
+    color: #9aa5ce;
+    padding: 0 8px;
+}
+
+/* Clock */
+#clock {
+    color: #7aa2f7;
+    font-weight: bold;
+    padding: 0 12px;
+}
+
+/* System stats */
+#cpu, #memory, #temperature {
+    padding: 0 8px;
+    color: #9ece6a;
+}
+
+#temperature.critical {
+    color: #f7768e;
+}
+
+/* Network */
+#network {
+    padding: 0 8px;
+    color: #2ac3de;
+}
+
+#network.disconnected {
+    color: #565f89;
+}
+
+/* Audio */
+#pulseaudio {
+    padding: 0 8px;
+    color: #bb9af7;
+}
+
+#pulseaudio.muted {
+    color: #565f89;
+}
+
+/* Battery */
+#battery {
+    padding: 0 8px;
+    color: #9ece6a;
+}
+
+#battery.warning {
+    color: #e0af68;
+}
+
+#battery.critical {
+    color: #f7768e;
+    animation: blink 1s linear infinite;
+}
+
+@keyframes blink {
+    to { opacity: 0.3; }
+}
+
+/* Bluetooth */
+#bluetooth {
+    padding: 0 8px;
+    color: #7aa2f7;
+}
+
+/* Ollama status */
+#custom-ollama {
+    padding: 0 8px;
+    color: #e0af68;
+}
+
+/* Notifications */
+#custom-notification {
+    padding: 0 8px;
+    color: #9aa5ce;
+}
+
+/* Tray */
+#tray {
+    padding: 0 6px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}

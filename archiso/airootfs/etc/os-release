@@ -1,0 +1,11 @@
+NAME="HarnessOS"
+PRETTY_NAME="HarnessOS"
+ID=harnessOS
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;122;162;247"
+HOME_URL="https://github.com/Codigo-Free/HarnessOS"
+DOCUMENTATION_URL="https://github.com/Codigo-Free/HarnessOS/tree/main/docs"
+SUPPORT_URL="https://github.com/Codigo-Free/HarnessOS/issues"
+BUG_REPORT_URL="https://github.com/Codigo-Free/HarnessOS/issues"
+LOGO="harnessOS"

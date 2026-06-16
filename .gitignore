@@ -1,0 +1,41 @@
+# HarnessOS — gitignore
+
+# Build artifacts
+out/
+work/
+*.iso
+*.img
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Node
+node_modules/
+.npm/
+
+# Editor
+.idea/
+*.swp
+*.swo
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.pem
+*.key
+
+# Pacman repo database (generated)
+packages/repo/*.db*
+packages/repo/*.files*
+packages/repo/*.pkg.tar.*

@@ -1,0 +1,95 @@
+# HarnessOS — Starship prompt configuration
+# Tokyo Night inspired palette
+
+format = """
+$username\
+$directory\
+$git_branch\
+$git_status\
+$python\
+$nodejs\
+$rust\
+$java\
+$dotnet\
+$php\
+$docker_context\
+$cmd_duration\
+$line_break\
+$character"""
+
+[character]
+success_symbol = "[❯](bold #7aa2f7)"
+error_symbol   = "[❯](bold #f7768e)"
+
+[username]
+style_user = "bold #9ece6a"
+style_root = "bold #f7768e"
+format     = "[$user]($style) "
+show_always = false
+
+[directory]
+style             = "bold #7aa2f7"
+truncation_length = 4
+truncate_to_repo  = true
+format            = "[$path]($style)[$read_only]($read_only_style) "
+
+[git_branch]
+symbol = " "
+style  = "bold #bb9af7"
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style    = "bold #e0af68"
+ahead    = "⇡${count}"
+behind   = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+modified = "!${count}"
+staged   = "+${count}"
+untracked = "?${count}"
+format   = "([$all_status$ahead_behind]($style) )"
+
+[python]
+symbol = " "
+style  = "#3d9900"
+format = "[$symbol$virtualenv]($style) "
+detect_files = ["pyproject.toml", "setup.py", "requirements.txt", ".python-version", "Pipfile"]
+
+[nodejs]
+symbol = " "
+style  = "#41b883"
+format = "[$symbol($version)]($style) "
+detect_files = ["package.json", ".node-version", ".nvmrc"]
+
+[rust]
+symbol = " "
+style  = "#ce422b"
+format = "[$symbol($version)]($style) "
+
+[java]
+symbol = " "
+style  = "#f89820"
+format = "[$symbol($version)]($style) "
+
+[dotnet]
+symbol = " "
+style  = "#512bd4"
+format = "[$symbol($version)]($style) "
+
+[php]
+symbol = " "
+style  = "#777bb4"
+format = "[$symbol($version)]($style) "
+
+[docker_context]
+symbol    = " "
+style     = "#0db7ed"
+format    = "[$symbol$context]($style) "
+only_with_files = true
+
+[cmd_duration]
+min_time   = 2000
+style      = "bold #e0af68"
+format     = "[$duration]($style) "
+
+[line_break]
+disabled = false

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# HarnessOS — Installation launcher
+set -euo pipefail
+
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+echo -e "${CYAN}${BOLD}HarnessOS Installer${RESET}"
+echo ""
+
+# Require root
+if [[ $EUID -ne 0 ]]; then
+    echo "The installer must run as root. Please run: sudo harness-install"
+    exit 1
+fi
+
+# Check connectivity
+if ! ping -c1 -W3 archlinux.org &>/dev/null; then
+    echo "No internet connection detected."
+    echo "Use 'nmtui' or 'wifi-menu' to connect, then re-run harness-install."
+    exit 1
+fi
+
+exec python3 /usr/local/lib/harness/installer/main.py "$@"

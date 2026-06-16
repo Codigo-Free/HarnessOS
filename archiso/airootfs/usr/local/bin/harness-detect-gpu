@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# HarnessOS — GPU detection utility
+# Outputs KEY=VALUE pairs to stdout for easy sourcing
+set -euo pipefail
+
+source /usr/local/lib/harness/detect.sh
+
+VENDOR=$(detect_gpu_vendor)
+echo "GPU_VENDOR=${VENDOR}"
+
+case "${VENDOR}" in
+    nvidia)
+        MODEL=$(detect_nvidia_model)
+        DRIVER=$(get_recommended_nvidia_driver)
+        echo "GPU_MODEL=${MODEL}"
+        echo "GPU_DRIVER=${DRIVER}"
+        echo "CUDA_CAPABLE=true"
+        echo "WAYLAND_VARS=WLR_NO_HARDWARE_CURSORS=1,GBM_BACKEND=nvidia-drm,__GLX_VENDOR_LIBRARY_NAME=nvidia"
+        ;;
+    amd)
+        MODEL=$(lspci | grep -i "amd\|radeon" | grep -i "vga\|3d\|display" | head -1 | sed 's/.*: //')
+        echo "GPU_MODEL=${MODEL}"
+        echo "GPU_DRIVER=mesa"
+        echo "CUDA_CAPABLE=false"
+        echo "ROCM_CAPABLE=true"
+        ;;
+    intel)
+        MODEL=$(lspci | grep -i "intel" | grep -i "vga\|3d\|display" | head -1 | sed 's/.*: //')
+        echo "GPU_MODEL=${MODEL}"
+        echo "GPU_DRIVER=mesa"
+        echo "CUDA_CAPABLE=false"
+        echo "ROCM_CAPABLE=false"
+        ;;
+    *)
+        echo "GPU_MODEL=Unknown"
+        echo "GPU_DRIVER=mesa"
+        echo "CUDA_CAPABLE=false"
+        echo "ROCM_CAPABLE=false"
+        ;;
+esac

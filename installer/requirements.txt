@@ -1,0 +1,2 @@
+textual>=0.50.0
+pyparted>=3.13.0

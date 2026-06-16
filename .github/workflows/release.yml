@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build ISO and Create GitHub Release
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install archiso
+        run: pacman -Sy --noconfirm archiso mkinitcpio-archiso
+
+      - name: Build ISO
+        run: |
+          mkdir -p out
+          mkarchiso -v -w /tmp/harness-work -o ./out ./archiso
+
+      - name: Generate checksums
+        run: |
+          cd out
+          for f in *.iso; do
+            sha256sum "${f}" > "${f}.sha256"
+            md5sum    "${f}" > "${f}.md5"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/*.iso
+            out/*.sha256
+            out/*.md5
+          generate_release_notes: true
+          name: "HarnessOS ${{ github.ref_name }}"
+          body: |
+            ## HarnessOS ${{ github.ref_name }}
+
+            ### Installation
+            1. Download the `.iso` file below
+            2. Flash to USB:
+               ```bash
+               sudo dd if=harnessOS-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
+               ```
+            3. Boot from USB → run `harness-install`
+
+            ### Verify download
+            ```bash
+            sha256sum -c harnessOS-*.iso.sha256
+            ```
+
+            ### What's included
+            - Hyprland + Waybar + Kitty (Tokyo Night theme)
+            - Claude CLI, GitHub Copilot, Ollama
+            - Docker, docker-compose
+            - Python 3, Node.js LTS, .NET SDK, Java (OpenJDK), PHP
+            - pnpm, TypeScript, ts-node
+            - linux-zen kernel (optimized for desktop latency)
+            - BTRFS with automatic snapper snapshots
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

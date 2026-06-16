@@ -1,0 +1,56 @@
+# HarnessOS — Global gitignore
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Node
+node_modules/
+.npm/
+.pnpm-store/
+dist/
+.next/
+.nuxt/
+.output/
+
+# Editors
+.idea/
+*.iml
+.vscode/settings.json
+*.swp
+*.swo
+.netrwhist
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Java
+target/
+*.class
+*.jar
+
+# .NET
+obj/
+bin/
+*.user
+
+# PHP
+vendor/
+composer.lock

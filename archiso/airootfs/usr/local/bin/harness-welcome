@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# HarnessOS — Welcome screen for live environment
+set -euo pipefail
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+clear
+cat /usr/local/share/harness/ascii-logo.txt
+
+echo -e "${BOLD}Welcome to HarnessOS Live${RESET}"
+echo -e "An AI-powered development environment built on Arch Linux."
+echo ""
+echo -e "${CYAN}System Information:${RESET}"
+echo -e "  CPU:  $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs)"
+echo -e "  RAM:  $(free -h | awk '/Mem:/ {print $2}')"
+echo -e "  GPU:  $(/usr/local/bin/harness-detect-gpu 2>/dev/null | grep GPU_MODEL | cut -d= -f2 || echo 'Detection pending')"
+echo ""
+echo -e "${GREEN}Quick Start:${RESET}"
+echo -e "  ${BOLD}harness-install${RESET}    — Install HarnessOS to disk"
+echo -e "  ${BOLD}wifi-menu${RESET}          — Connect to Wi-Fi (or use nmtui)"
+echo -e "  ${BOLD}nmtui${RESET}              — NetworkManager TUI"
+echo ""
+echo -e "${YELLOW}Pre-installed AI Tools:${RESET}"
+echo -e "  ${BOLD}claude${RESET}             — Claude Code CLI (requires API key)"
+echo -e "  ${BOLD}ollama${RESET}             — Local LLM runner"
+echo -e "                       First run: ollama pull llama3.2"
+echo -e "  ${BOLD}gh copilot${RESET}         — GitHub Copilot CLI (requires gh auth login)"
+echo ""
+echo -e "${BLUE}Documentation:${RESET}"
+echo -e "  github.com/Codigo-Free/HarnessOS"
+echo ""
