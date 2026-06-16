@@ -33,6 +33,15 @@ fi
 
 mkdir -p "${OUT_DIR}" "${WORK_DIR}"
 
+# Copy installer into airootfs so harness-install can find it at runtime
+log_step "Injecting installer into airootfs..."
+INSTALLER_TARGET="${PROFILE_DIR}/airootfs/usr/local/lib/harness/installer"
+rm -rf "${INSTALLER_TARGET}"
+mkdir -p "${INSTALLER_TARGET}"
+cp -r "${ROOT_DIR}/installer/harness_installer" "${INSTALLER_TARGET}/"
+cp    "${ROOT_DIR}/installer/requirements.txt"   "${INSTALLER_TARGET}/"
+log_ok "Installer injected at ${INSTALLER_TARGET}"
+
 log_step "Running mkarchiso..."
 mkarchiso -v \
     -w "${WORK_DIR}" \

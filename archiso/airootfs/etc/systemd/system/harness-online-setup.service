@@ -1,0 +1,15 @@
+[Unit]
+Description=HarnessOS Online Setup (npm globals, gh extensions)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/harness-online-setup-done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/harness-online-setup
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # HarnessOS — Post-build customization hook
-# This script runs inside the chroot of the live environment during ISO build.
-# IMPORTANT: runs as root inside the squashfs chroot.
+# Runs inside the chroot during ISO build (NO internet access here).
+# Internet-dependent setup (npm globals, gh extensions) goes in harness-online-setup.
 set -euo pipefail
 
 echo ">>> HarnessOS: customize_airootfs.sh starting..."
@@ -13,7 +13,7 @@ sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 locale-gen
 
 # ---------------------------------------------------------------------------
-# SHELL — set zsh as default for root
+# SHELL — set zsh as default for root in live env
 # ---------------------------------------------------------------------------
 chsh -s /bin/zsh root
 
@@ -25,6 +25,7 @@ systemctl enable bluetooth.service
 systemctl enable docker.service
 systemctl enable ollama.service
 systemctl enable harness-firstboot.service
+systemctl enable harness-online-setup.service
 
 # Disable conflicting network services
 systemctl disable dhcpcd.service 2>/dev/null || true
@@ -35,32 +36,7 @@ systemctl disable dhcpcd.service 2>/dev/null || true
 sed -i 's/#SystemMaxUse=/SystemMaxUse=200M/' /etc/systemd/journald.conf
 
 # ---------------------------------------------------------------------------
-# NODE.JS / NPM GLOBAL TOOLS
-# ---------------------------------------------------------------------------
-# Claude Code CLI
-npm install -g @anthropic-ai/claude-code
-
-# pnpm — modern package manager
-npm install -g pnpm
-
-# TypeScript tools
-npm install -g typescript ts-node tsx
-
-# ---------------------------------------------------------------------------
-# PYTHON TOOLS via pipx
-# ---------------------------------------------------------------------------
-pipx ensurepath || true
-pipx install uv || true
-
-# ---------------------------------------------------------------------------
-# GH COPILOT EXTENSION
-# ---------------------------------------------------------------------------
-# Requires gh auth — will be configured post-install by the user
-# Pre-install extension binary for offline use
-gh extension install github/gh-copilot 2>/dev/null || true
-
-# ---------------------------------------------------------------------------
-# DOCKER GROUP — ensure docker group exists
+# DOCKER GROUP
 # ---------------------------------------------------------------------------
 groupadd -f docker
 

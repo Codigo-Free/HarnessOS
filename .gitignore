@@ -6,6 +6,9 @@ work/
 *.iso
 *.img
 
+# Installer copy injected into airootfs during build (generated, not source)
+archiso/airootfs/usr/local/lib/harness/installer/
+
 # Python
 __pycache__/
 *.pyc

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# HarnessOS — Online setup: installs npm globals and gh extensions.
+# Runs once on first boot after network is available.
+set -euo pipefail
+
+DONE_FILE="/var/lib/harness-online-setup-done"
+LOG_FILE="/var/log/harness-online-setup.log"
+
+[[ -f "${DONE_FILE}" ]] && exit 0
+
+exec > >(tee -a "${LOG_FILE}") 2>&1
+
+echo ">>> HarnessOS online setup starting: $(date)"
+
+# Wait for internet (max 30s)
+for i in $(seq 1 30); do
+    ping -c1 -W1 archlinux.org &>/dev/null && break
+    echo "  Waiting for internet... ${i}/30"
+    sleep 1
+done
+
+if ! ping -c1 -W1 archlinux.org &>/dev/null; then
+    echo ">>> No internet after 30s — skipping online setup."
+    exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# npm global tools
+# ---------------------------------------------------------------------------
+echo ">>> Installing Claude Code CLI..."
+npm install -g @anthropic-ai/claude-code
+
+echo ">>> Installing pnpm..."
+npm install -g pnpm
+
+echo ">>> Installing TypeScript tools..."
+npm install -g typescript ts-node tsx
+
+# ---------------------------------------------------------------------------
+# GitHub Copilot extension (requires gh to be present)
+# ---------------------------------------------------------------------------
+if command -v gh &>/dev/null; then
+    echo ">>> Installing GitHub Copilot CLI extension..."
+    gh extension install github/gh-copilot 2>/dev/null || true
+fi
+
+touch "${DONE_FILE}"
+echo ">>> HarnessOS online setup complete: $(date)"

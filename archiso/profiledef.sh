@@ -26,4 +26,6 @@ file_permissions=(
     ["/usr/local/bin/harness-install"]="0:0:755"
     ["/usr/local/bin/harness-detect-gpu"]="0:0:755"
     ["/usr/local/bin/harness-welcome"]="0:0:755"
+    ["/usr/local/bin/harness-online-setup"]="0:0:755"
+    ["/usr/local/lib/harness/detect.sh"]="0:0:755"
 )

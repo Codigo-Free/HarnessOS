@@ -16,6 +16,15 @@ command -v docker &>/dev/null || die "Docker not found. Install Docker first."
 
 mkdir -p "${OUT_DIR}"
 
+# Copy installer into airootfs before building
+log_step "Injecting installer into airootfs..."
+INSTALLER_TARGET="${ROOT_DIR}/archiso/airootfs/usr/local/lib/harness/installer"
+rm -rf "${INSTALLER_TARGET}"
+mkdir -p "${INSTALLER_TARGET}"
+cp -r "${ROOT_DIR}/installer/harness_installer" "${INSTALLER_TARGET}/"
+cp    "${ROOT_DIR}/installer/requirements.txt"   "${INSTALLER_TARGET}/"
+log_ok "Installer injected"
+
 log_info "Pulling archlinux:latest..."
 docker pull archlinux:latest
 
