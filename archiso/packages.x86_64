@@ -200,5 +200,4 @@ snap-pac
 # LIVE ENVIRONMENT UTILITIES
 # =============================================================================
 terminus-font
-memtest86+
-syslinux
+memtest86+-efi
