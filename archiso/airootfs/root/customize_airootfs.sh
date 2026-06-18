@@ -18,9 +18,18 @@ locale-gen
 chsh -s /bin/zsh root
 
 # ---------------------------------------------------------------------------
-# ROOT PASSWORD — unlock for live environment (no password needed on live USB)
+# ROOT PASSWORD — unlock for live environment
 # ---------------------------------------------------------------------------
 passwd -d root
+
+# ---------------------------------------------------------------------------
+# LIVE USER — create 'harness' user for Hyprland (cannot run as root)
+# ---------------------------------------------------------------------------
+useradd -m -G wheel,docker,audio,video,input,storage -s /bin/zsh harness
+passwd -d harness
+echo "harness ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/harness
+chmod 440 /etc/sudoers.d/harness
+chown -R harness:harness /home/harness
 
 # ---------------------------------------------------------------------------
 # SERVICES
