@@ -18,6 +18,11 @@ locale-gen
 chsh -s /bin/zsh root
 
 # ---------------------------------------------------------------------------
+# ROOT PASSWORD — unlock for live environment (no password needed on live USB)
+# ---------------------------------------------------------------------------
+passwd -d root
+
+# ---------------------------------------------------------------------------
 # SERVICES
 # ---------------------------------------------------------------------------
 systemctl enable NetworkManager.service
@@ -44,6 +49,13 @@ groupadd -f docker
 # SUDOERS PERMISSIONS
 # ---------------------------------------------------------------------------
 chmod 440 /etc/sudoers.d/wheel
+
+# ---------------------------------------------------------------------------
+# INITRAMFS — regenerate with archiso preset AFTER our config files are in place
+# The linux-zen package builds the initramfs during pacstrap using its default
+# preset. We override the preset here and rebuild so the archiso hook is included.
+# ---------------------------------------------------------------------------
+mkinitcpio -p linux-zen
 
 # ---------------------------------------------------------------------------
 # ASCII LOGO

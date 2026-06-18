@@ -191,6 +191,7 @@ polkit-gnome
 # =============================================================================
 # SYSTEM STABILITY (archiso build tools)
 # =============================================================================
+mkinitcpio-archiso
 archinstall
 python-pyparted
 snapper
