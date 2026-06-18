@@ -164,6 +164,19 @@ Or use `Timeshift` for full system rollbacks from the live ISO if the system won
 
 ---
 
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [Overview](docs/01-overview.md) | What is HarnessOS, what ships, target audience |
+| [Building](docs/02-building.md) | Build from source with Docker or native Arch |
+| [Live Environment](docs/03-live-environment.md) | Booting, keybindings, live user, online setup |
+| [Installation](docs/04-installation.md) | TUI installer walkthrough, disk layout, GPU setup |
+| [AI Tools](docs/05-ai-tools.md) | Claude, Ollama, Copilot — usage and configuration |
+| [Troubleshooting](docs/06-troubleshooting.md) | Common boot, login, and build errors |
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to add packages, propose dotfile changes, or submit PKGBUILDs.
