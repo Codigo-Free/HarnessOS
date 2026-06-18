@@ -1,0 +1,91 @@
+* {
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 16px;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+}
+
+window#waybar {
+    background-color: rgba(10, 14, 26, 0.92);
+    border-right: 1px solid rgba(51, 204, 255, 0.2);
+    color: #cdd6f4;
+}
+
+/* Logo */
+#custom-logo {
+    color: #33ccff;
+    font-size: 22px;
+    padding: 12px 0;
+    margin: 4px 0;
+}
+
+/* Workspaces */
+#workspaces {
+    padding: 4px 0;
+}
+
+#workspaces button {
+    color: #585b70;
+    background: transparent;
+    padding: 6px 0;
+    margin: 2px 4px;
+    border-radius: 6px;
+    min-width: 36px;
+    font-size: 13px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+#workspaces button:hover {
+    background: rgba(51, 204, 255, 0.15);
+    color: #cdd6f4;
+}
+
+#workspaces button.active {
+    background: rgba(51, 204, 255, 0.25);
+    color: #33ccff;
+    border-left: 2px solid #33ccff;
+}
+
+#workspaces button.urgent {
+    background: rgba(243, 139, 168, 0.3);
+    color: #f38ba8;
+}
+
+/* Bottom icons */
+#custom-browser,
+#custom-terminal,
+#custom-code,
+#custom-claude,
+#custom-files {
+    color: #7f849c;
+    font-size: 18px;
+    padding: 8px 0;
+    margin: 2px 4px;
+    border-radius: 8px;
+    min-width: 44px;
+    transition: all 0.2s;
+}
+
+#custom-browser:hover  { color: #89b4fa; background: rgba(137, 180, 250, 0.15); }
+#custom-terminal:hover { color: #a6e3a1; background: rgba(166, 227, 161, 0.15); }
+#custom-code:hover     { color: #89dceb; background: rgba(137, 220, 235, 0.15); }
+#custom-claude:hover   { color: #33ccff; background: rgba(51, 204, 255, 0.15); }
+#custom-files:hover    { color: #f9e2af; background: rgba(249, 226, 175, 0.15); }
+
+/* Power button */
+#custom-power {
+    color: #f38ba8;
+    font-size: 20px;
+    padding: 10px 0;
+    margin: 4px 4px 8px;
+    border-radius: 8px;
+    min-width: 44px;
+    transition: all 0.2s;
+}
+
+#custom-power:hover {
+    background: rgba(243, 139, 168, 0.2);
+    color: #ff6b6b;
+}

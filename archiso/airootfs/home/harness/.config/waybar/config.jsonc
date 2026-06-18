@@ -1,0 +1,70 @@
+{
+    "layer": "top",
+    "position": "left",
+    "width": 52,
+    "exclusive": true,
+    "passthrough": false,
+    "modules-top": [
+        "custom/logo",
+        "hyprland/workspaces"
+    ],
+    "modules-center": [],
+    "modules-bottom": [
+        "custom/browser",
+        "custom/terminal",
+        "custom/code",
+        "custom/claude",
+        "custom/files",
+        "custom/power"
+    ],
+
+    "custom/logo": {
+        "format": "",
+        "tooltip": "HarnessOS",
+        "on-click": "wofi --show drun"
+    },
+
+    "hyprland/workspaces": {
+        "format": "{id}",
+        "on-click": "activate",
+        "sort-by-number": true,
+        "active-only": false,
+        "all-outputs": true
+    },
+
+    "custom/browser": {
+        "format": "󰈹",
+        "tooltip": "Firefox",
+        "on-click": "firefox"
+    },
+
+    "custom/terminal": {
+        "format": "",
+        "tooltip": "Terminal (kitty)",
+        "on-click": "kitty"
+    },
+
+    "custom/code": {
+        "format": "󰨞",
+        "tooltip": "VS Code",
+        "on-click": "code"
+    },
+
+    "custom/claude": {
+        "format": "󰚩",
+        "tooltip": "Claude AI",
+        "on-click": "kitty -e claude"
+    },
+
+    "custom/files": {
+        "format": "󰉋",
+        "tooltip": "Configurar escritorio",
+        "on-click": "kitty -e sh -c 'echo \"Edita ~/.config/hypr/hyprland.conf\" && $SHELL'"
+    },
+
+    "custom/power": {
+        "format": "⏻",
+        "tooltip": "Apagar",
+        "on-click": "wofi --dmenu -p 'Apagar?' <<< $'Apagar\nReiniciar\nSuspender' | grep -q Apagar && systemctl poweroff || grep -q Reiniciar && systemctl reboot"
+    }
+}

@@ -67,6 +67,38 @@ chmod 440 /etc/sudoers.d/wheel
 mkinitcpio -p linux-zen
 
 # ---------------------------------------------------------------------------
+# WALLPAPER — generate dark gradient PNG for HarnessOS
+# ---------------------------------------------------------------------------
+mkdir -p /usr/share/harness
+python3 - << 'PYEOF'
+import struct, zlib
+
+def png_chunk(name, data):
+    raw = name + data
+    return struct.pack('>I', len(data)) + raw + struct.pack('>I', zlib.crc32(raw) & 0xffffffff)
+
+W, H = 1920, 1080
+rows = []
+for y in range(H):
+    t = y / (H - 1)
+    r = int(10  + t * 8)
+    g = int(14  + t * 10)
+    b = int(26  + t * 18)
+    rows.append(b'\x00' + bytes([r, g, b] * W))
+
+ihdr = struct.pack('>IIBBBBB', W, H, 8, 2, 0, 0, 0)
+idat = zlib.compress(b''.join(rows), 9)
+png  = (b'\x89PNG\r\n\x1a\n'
+        + png_chunk(b'IHDR', ihdr)
+        + png_chunk(b'IDAT', idat)
+        + png_chunk(b'IEND', b''))
+
+with open('/usr/share/harness/wallpaper.png', 'wb') as f:
+    f.write(png)
+print('Wallpaper generated.')
+PYEOF
+
+# ---------------------------------------------------------------------------
 # ASCII LOGO
 # ---------------------------------------------------------------------------
 mkdir -p /usr/local/share/harness
