@@ -1,17 +1,14 @@
 [Unit]
 Description=HarnessOS First Boot Welcome
-After=getty@tty1.service
+After=multi-user.target
 ConditionPathExists=!/var/lib/harness-firstboot-done
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/harness-welcome
 ExecStartPost=/usr/bin/touch /var/lib/harness-firstboot-done
-StandardInput=tty
-StandardOutput=tty
-TTYPath=/dev/tty1
-TTYReset=yes
-TTYVHangup=yes
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
