@@ -18,7 +18,7 @@
     ],
 
     "custom/logo": {
-        "format": "H",
+        "format": "⬡",
         "tooltip": "HarnessOS — App Launcher",
         "on-click": "wofi --show drun"
     },
@@ -27,36 +27,37 @@
         "format": "{id}",
         "on-click": "activate",
         "sort-by-number": true,
-        "active-only": false,
-        "all-outputs": true
+        "persistent_workspaces": {
+            "*": [1, 2, 3, 4]
+        }
     },
 
     "custom/browser": {
-        "format": "",
-        "tooltip": "Firefox",
+        "format": "",
+        "tooltip": "Firefox  (Super+B)",
         "on-click": "firefox"
     },
 
     "custom/terminal": {
-        "format": "",
-        "tooltip": "Terminal",
+        "format": "",
+        "tooltip": "Terminal  (Super+Return)",
         "on-click": "kitty"
     },
 
     "custom/code": {
-        "format": "",
-        "tooltip": "VS Code",
+        "format": "",
+        "tooltip": "VS Code  (Super+E)",
         "on-click": "code"
     },
 
     "custom/claude": {
-        "format": "",
-        "tooltip": "Claude AI",
+        "format": "",
+        "tooltip": "Claude AI  (Super+C)",
         "on-click": "kitty -e claude"
     },
 
     "custom/power": {
-        "format": "",
+        "format": "",
         "tooltip": "Apagar / Reiniciar",
         "on-click": "bash -c 'echo -e \"Apagar\\nReiniciar\\nSuspender\" | wofi --dmenu -p \"Sistema\" | xargs -I{} bash -c \"[ \\\"{}\\\" = Apagar ] && systemctl poweroff; [ \\\"{}\\\" = Reiniciar ] && systemctl reboot; [ \\\"{}\\\" = Suspender ] && systemctl suspend\"'"
     }
