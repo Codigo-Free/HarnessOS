@@ -1,40 +1,49 @@
 * {
-    font-family: "JetBrainsMono Nerd Font", monospace;
-    font-size: 16px;
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "JetBrainsMono Nerd Font", monospace;
+    font-size: 15px;
+    font-weight: bold;
     border: none;
     border-radius: 0;
     min-height: 0;
 }
 
 window#waybar {
-    background-color: rgba(10, 14, 26, 0.92);
-    border-right: 1px solid rgba(51, 204, 255, 0.2);
+    background-color: rgba(10, 14, 26, 0.90);
+    border-right: 1px solid rgba(51, 204, 255, 0.25);
     color: #cdd6f4;
 }
 
 /* Logo */
 #custom-logo {
     color: #33ccff;
-    font-size: 22px;
+    font-size: 20px;
+    font-weight: 900;
     padding: 12px 0;
-    margin: 4px 0;
+    margin: 6px 4px;
+    background: rgba(51, 204, 255, 0.15);
+    border-radius: 8px;
+    min-width: 44px;
+}
+
+#custom-logo:hover {
+    background: rgba(51, 204, 255, 0.30);
 }
 
 /* Workspaces */
 #workspaces {
-    padding: 4px 0;
+    padding: 6px 0;
 }
 
 #workspaces button {
-    color: #585b70;
+    color: #4a5568;
     background: transparent;
     padding: 6px 0;
-    margin: 2px 4px;
+    margin: 2px 6px;
     border-radius: 6px;
-    min-width: 36px;
+    min-width: 38px;
     font-size: 13px;
     font-weight: bold;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
 }
 
 #workspaces button:hover {
@@ -43,49 +52,47 @@ window#waybar {
 }
 
 #workspaces button.active {
-    background: rgba(51, 204, 255, 0.25);
+    background: rgba(51, 204, 255, 0.20);
     color: #33ccff;
     border-left: 2px solid #33ccff;
 }
 
 #workspaces button.urgent {
-    background: rgba(243, 139, 168, 0.3);
+    background: rgba(243, 139, 168, 0.25);
     color: #f38ba8;
 }
 
-/* Bottom icons */
+/* Bottom app icons */
 #custom-browser,
 #custom-terminal,
 #custom-code,
-#custom-claude,
-#custom-files {
-    color: #7f849c;
-    font-size: 18px;
+#custom-claude {
+    color: #6b7280;
+    font-size: 16px;
     padding: 8px 0;
-    margin: 2px 4px;
+    margin: 2px 6px;
     border-radius: 8px;
     min-width: 44px;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
 }
 
 #custom-browser:hover  { color: #89b4fa; background: rgba(137, 180, 250, 0.15); }
 #custom-terminal:hover { color: #a6e3a1; background: rgba(166, 227, 161, 0.15); }
 #custom-code:hover     { color: #89dceb; background: rgba(137, 220, 235, 0.15); }
 #custom-claude:hover   { color: #33ccff; background: rgba(51, 204, 255, 0.15); }
-#custom-files:hover    { color: #f9e2af; background: rgba(249, 226, 175, 0.15); }
 
 /* Power button */
 #custom-power {
     color: #f38ba8;
-    font-size: 20px;
+    font-size: 18px;
     padding: 10px 0;
-    margin: 4px 4px 8px;
+    margin: 4px 6px 10px;
     border-radius: 8px;
     min-width: 44px;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
 }
 
 #custom-power:hover {
-    background: rgba(243, 139, 168, 0.2);
+    background: rgba(243, 139, 168, 0.20);
     color: #ff6b6b;
 }
