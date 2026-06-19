@@ -1,6 +1,6 @@
 * {
-    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "JetBrainsMono Nerd Font", monospace;
-    font-size: 15px;
+    font-family: "JetBrainsMono Nerd Font", "JetBrainsMono Nerd Font Mono", monospace;
+    font-size: 14px;
     font-weight: bold;
     border: none;
     border-radius: 0;
@@ -8,39 +8,38 @@
 }
 
 window#waybar {
-    background-color: rgba(10, 14, 26, 0.90);
-    border-right: 1px solid rgba(51, 204, 255, 0.25);
+    background-color: rgba(10, 14, 26, 0.92);
+    border-bottom: 1px solid rgba(51, 204, 255, 0.20);
     color: #cdd6f4;
 }
 
 /* Logo */
 #custom-logo {
     color: #33ccff;
-    font-size: 20px;
-    font-weight: 900;
-    padding: 12px 0;
-    margin: 6px 4px;
-    background: rgba(51, 204, 255, 0.15);
-    border-radius: 8px;
-    min-width: 44px;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 0 16px;
+    margin: 4px 4px;
+    background: rgba(51, 204, 255, 0.12);
+    border-radius: 6px;
 }
 
 #custom-logo:hover {
-    background: rgba(51, 204, 255, 0.30);
+    background: rgba(51, 204, 255, 0.25);
 }
 
 /* Workspaces */
 #workspaces {
-    padding: 6px 0;
+    padding: 0 4px;
 }
 
 #workspaces button {
     color: #4a5568;
     background: transparent;
-    padding: 6px 0;
-    margin: 2px 6px;
+    padding: 0 10px;
+    margin: 4px 2px;
     border-radius: 6px;
-    min-width: 38px;
+    min-width: 28px;
     font-size: 13px;
     font-weight: bold;
     transition: all 0.15s ease;
@@ -54,7 +53,7 @@ window#waybar {
 #workspaces button.active {
     background: rgba(51, 204, 255, 0.20);
     color: #33ccff;
-    border-left: 2px solid #33ccff;
+    border-bottom: 2px solid #33ccff;
 }
 
 #workspaces button.urgent {
@@ -62,18 +61,16 @@ window#waybar {
     color: #f38ba8;
 }
 
-/* Bottom app icons — FA6 Solid requires font-weight 900 */
+/* Right-side app icons */
 #custom-browser,
 #custom-terminal,
 #custom-code,
 #custom-claude {
     color: #6b7280;
     font-size: 16px;
-    font-weight: 900;
-    padding: 8px 0;
-    margin: 2px 6px;
-    border-radius: 8px;
-    min-width: 44px;
+    padding: 0 10px;
+    margin: 4px 2px;
+    border-radius: 6px;
     transition: all 0.15s ease;
 }
 
@@ -82,15 +79,13 @@ window#waybar {
 #custom-code:hover     { color: #89dceb; background: rgba(137, 220, 235, 0.15); }
 #custom-claude:hover   { color: #33ccff; background: rgba(51, 204, 255, 0.15); }
 
-/* Power button — FA6 Solid requires font-weight 900 */
+/* Power button */
 #custom-power {
     color: #f38ba8;
-    font-size: 18px;
-    font-weight: 900;
-    padding: 10px 0;
-    margin: 4px 6px 10px;
-    border-radius: 8px;
-    min-width: 44px;
+    font-size: 16px;
+    padding: 0 14px;
+    margin: 4px 6px 4px 2px;
+    border-radius: 6px;
     transition: all 0.15s ease;
 }
 

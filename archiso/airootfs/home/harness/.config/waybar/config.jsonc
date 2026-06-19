@@ -1,15 +1,15 @@
 {
     "layer": "top",
-    "position": "left",
-    "width": 56,
+    "position": "top",
+    "height": 44,
     "exclusive": true,
     "passthrough": false,
-    "modules-top": [
+    "modules-left": [
         "custom/logo",
         "hyprland/workspaces"
     ],
     "modules-center": [],
-    "modules-bottom": [
+    "modules-right": [
         "custom/browser",
         "custom/terminal",
         "custom/code",
@@ -18,8 +18,8 @@
     ],
 
     "custom/logo": {
-        "format": "⬡",
-        "tooltip": "HarnessOS — App Launcher",
+        "format": " HarnessOS",
+        "tooltip": "App Launcher",
         "on-click": "wofi --show drun"
     },
 
@@ -33,19 +33,19 @@
     },
 
     "custom/browser": {
-        "format": "",
+        "format": "",
         "tooltip": "Firefox  (Super+B)",
         "on-click": "firefox"
     },
 
     "custom/terminal": {
-        "format": "",
+        "format": "",
         "tooltip": "Terminal  (Super+Return)",
         "on-click": "kitty"
     },
 
     "custom/code": {
-        "format": "",
+        "format": "",
         "tooltip": "VS Code  (Super+E)",
         "on-click": "code"
     },
@@ -59,6 +59,6 @@
     "custom/power": {
         "format": "",
         "tooltip": "Apagar / Reiniciar",
-        "on-click": "bash -c 'echo -e \"Apagar\\nReiniciar\\nSuspender\" | wofi --dmenu -p \"Sistema\" | xargs -I{} bash -c \"[ \\\"{}\\\" = Apagar ] && systemctl poweroff; [ \\\"{}\\\" = Reiniciar ] && systemctl reboot; [ \\\"{}\\\" = Suspender ] && systemctl suspend\"'"
+        "on-click": "bash -c 'echo -e \"Apagar\\nReiniciar\\nSuspender\" | wofi --dmenu -p \"Sistema\" | xargs -I{} bash -c \"[ \\\"{}\\\"\ = Apagar ] && systemctl poweroff; [ \\\"{}\\\"\ = Reiniciar ] && systemctl reboot; [ \\\"{}\\\"\ = Suspender ] && systemctl suspend\"'"
     }
 }

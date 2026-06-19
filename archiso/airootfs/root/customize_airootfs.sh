@@ -85,17 +85,18 @@ rows = []
 for y in range(H):
     t = y / (H - 1)   # 0=top, 1=bottom
 
-    # Top: dark purple (30,15,55) → Bottom: dark teal (8,45,65)
-    r = int(30  - t * 22)
-    g = int(15  + t * 30)
-    b = int(55  + t * 10)
+    # Top: deep indigo (20,10,60) → Bottom: dark cyan (5,55,75)
+    # Clearly visible against Hyprland background_color 0x0a0e1a
+    r = int(20  - t * 15)
+    g = int(10  + t * 45)
+    b = int(60  + t * 15)
 
-    # Horizontal accent band at 55% height (subtle lighter stripe)
-    if 0.53 < t < 0.57:
-        fade = 1.0 - abs(t - 0.55) / 0.02
-        r = min(255, r + int(fade * 15))
-        g = min(255, g + int(fade * 25))
-        b = min(255, b + int(fade * 30))
+    # Accent band at ~40% height
+    if 0.38 < t < 0.42:
+        fade = 1.0 - abs(t - 0.40) / 0.02
+        r = min(255, r + int(fade * 10))
+        g = min(255, g + int(fade * 20))
+        b = min(255, b + int(fade * 25))
 
     rows.append(b'\x00' + bytes([r, g, b] * W))
 
@@ -127,5 +128,10 @@ cat > /usr/local/share/harness/ascii-logo.txt << 'LOGO'
                   github.com/Codigo-Free/HarnessOS
 
 LOGO
+
+# ---------------------------------------------------------------------------
+# FONT CACHE — rebuild so waybar/GTK can find all installed fonts
+# ---------------------------------------------------------------------------
+fc-cache -fv &>/dev/null || true
 
 echo ">>> HarnessOS: customize_airootfs.sh done."
