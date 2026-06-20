@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+choice=$(printf 'Apagar\nReiniciar\nSuspender' | wofi --dmenu -p "⏻ Sistema")
+case "$choice" in
+    "Apagar")    systemctl poweroff ;;
+    "Reiniciar") systemctl reboot ;;
+    "Suspender") systemctl suspend ;;
+esac

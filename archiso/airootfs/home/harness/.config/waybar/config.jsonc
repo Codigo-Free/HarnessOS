@@ -16,49 +16,47 @@
         "custom/claude",
         "custom/power"
     ],
-
     "custom/logo": {
-        "format": " HarnessOS",
+        "format": "⬡ HarnessOS",
         "tooltip": "App Launcher",
         "on-click": "wofi --show drun"
     },
-
     "hyprland/workspaces": {
         "format": "{id}",
         "on-click": "activate",
         "sort-by-number": true,
-        "persistent_workspaces": {
-            "*": [1, 2, 3, 4]
+        "persistent-workspaces": {
+            "*": [
+                1,
+                2,
+                3,
+                4
+            ]
         }
     },
-
     "custom/browser": {
         "format": "",
         "tooltip": "Firefox  (Super+B)",
         "on-click": "firefox"
     },
-
     "custom/terminal": {
         "format": "",
         "tooltip": "Terminal  (Super+Return)",
         "on-click": "kitty"
     },
-
     "custom/code": {
         "format": "",
         "tooltip": "VS Code  (Super+E)",
         "on-click": "code"
     },
-
     "custom/claude": {
         "format": "",
         "tooltip": "Claude AI  (Super+C)",
         "on-click": "kitty -e claude"
     },
-
     "custom/power": {
         "format": "",
-        "tooltip": "Apagar / Reiniciar",
-        "on-click": "bash -c 'echo -e \"Apagar\\nReiniciar\\nSuspender\" | wofi --dmenu -p \"Sistema\" | xargs -I{} bash -c \"[ \\\"{}\\\"\ = Apagar ] && systemctl poweroff; [ \\\"{}\\\"\ = Reiniciar ] && systemctl reboot; [ \\\"{}\\\"\ = Suspender ] && systemctl suspend\"'"
+        "tooltip": "Apagar / Reiniciar / Suspender",
+        "on-click": "harness-power"
     }
 }
