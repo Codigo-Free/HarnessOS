@@ -41,15 +41,19 @@ The HarnessOS ISO boots directly into a fully functional live environment withou
 | `Print` | Screenshot (select area) |
 | `SUPER + SHIFT + E` | Exit Hyprland |
 
-## Sidebar (Waybar)
+## Top bar (Waybar)
 
-The left sidebar contains:
-- **HarnessOS logo** — click to open app launcher
-- **Workspace indicators** — click to switch (or use `SUPER+1–4`)
-- **Firefox** icon
-- **Terminal** icon
-- **VS Code** icon
-- **Claude** icon
+The horizontal bar at the top contains:
+
+**Left side:**
+- **⬡ HarnessOS** — click to open app launcher (Wofi)
+- **Workspace indicators 1–4** — always visible, click to switch (or `SUPER+1–4`)
+
+**Right side:**
+- **Firefox** icon — open browser
+- **Terminal** icon — open Kitty
+- **VS Code** icon — open editor
+- **Claude** icon — open Claude CLI in terminal
 - **Power button** — shutdown / reboot / suspend menu
 
 ## Online setup (first boot with internet)
@@ -69,9 +73,42 @@ systemctl status harness-online-setup.service
 journalctl -u harness-online-setup.service
 ```
 
-If it didn't run (no internet at first boot), install manually:
+If it didn't run (no internet at first boot):
 ```bash
+# 1. Connect to WiFi
+nmtui
+
+# 2. Restart the setup service
+systemctl restart harness-online-setup.service
+
+# Or install manually:
 npm install -g @anthropic-ai/claude-code pnpm typescript ts-node tsx
+```
+
+## TUI tools
+
+All lazy TUI tools are pre-installed and aliased in the shell:
+
+| Alias | Tool | What it does |
+|-------|------|-------------|
+| `lg` | lazygit | Git staging, commits, branches, diffs |
+| `lzd` | lazydocker | Docker containers, images, logs |
+| `y` | yazi | File manager — exits and `cd`s to last directory |
+| `z <dir>` | zoxide | Smart `cd` — learns your most-used dirs |
+| `top` | bottom (`btm`) | Process / resource monitor |
+| `logs` | lnav | Log file navigator with filtering |
+| `k` | k9s | Kubernetes cluster TUI |
+
+Other shell aliases:
+```bash
+ls   → eza --icons        # Better ls with icons
+ll   → eza -la --icons    # Long list with git status
+cat  → bat --style=plain  # Syntax-highlighted cat
+vim  → nvim               # Neovim
+d    → docker
+dc   → docker compose
+dps  → docker ps (formatted)
+wifi → nmtui              # Connect to WiFi
 ```
 
 ## Launching the installer

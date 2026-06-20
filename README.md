@@ -12,21 +12,45 @@
 
 ## What ships out of the box
 
+### AI Tools
+| Tool | Command | Purpose |
+|------|---------|---------|
+| **Claude CLI** | `claude` | AI pair programmer (Anthropic) |
+| **Ollama** | `ollama` | Run LLMs locally (llama3.2, mistral, etc.) |
+| **GitHub Copilot** | `gh copilot` | Copilot CLI + Neovim plugin |
+
+### Desktop
 | Tool | Purpose |
 |------|---------|
-| **Claude CLI** (`claude`) | AI pair programmer (Anthropic) |
-| **Ollama** | Run LLMs locally (llama3.2, mistral, etc.) |
-| **GitHub Copilot** | `gh copilot suggest` + Neovim plugin |
 | **Hyprland** | Fast, tiling Wayland compositor |
-| **Waybar** | Status bar with Ollama status indicator |
-| **Kitty** | GPU-accelerated terminal (Tokyo Night) |
-| **Neovim** | Pre-configured with LSP, Copilot, Treesitter |
+| **Waybar** | Horizontal top bar with app icons and workspace switcher |
+| **Kitty** | GPU-accelerated terminal |
+| **Firefox** | Browser (`SUPER+B`) |
+| **VS Code** | Editor (`SUPER+E`) |
+| **Wofi** | App launcher (`SUPER+R`) |
+
+### TUI Tools (lazy interfaces)
+| Tool | Alias | Purpose |
+|------|-------|---------|
+| **Lazygit** | `lg` | Git TUI |
+| **Lazydocker** | `lzd` | Docker TUI |
+| **Yazi** | `y` | File manager (changes dir on exit) |
+| **Zoxide** | `z` | Smart directory navigation |
+| **Bottom** | `top` | Process monitor (replaces htop) |
+| **lnav** | `logs` | Log file viewer |
+| **K9s** | `k` | Kubernetes TUI |
+| **Neovim** | `vim` | Editor with LSP + Copilot |
+
+### Dev Stack
+| Tool | Purpose |
+|------|---------|
 | **Docker + Compose** | Containerization ready |
 | **Python 3** | + pip, pipx, uv, virtualenv |
 | **Node.js LTS** | + npm, pnpm, TypeScript, ts-node |
 | **.NET SDK** | C# development |
-| **OpenJDK** | Java + Maven |
+| **OpenJDK + Maven** | Java |
 | **PHP + Composer** | Web backend |
+| **kubectl** | Kubernetes CLI |
 | **linux-zen kernel** | Lower latency for desktop workloads |
 | **BTRFS + snapper** | Automatic rollback snapshots on every update |
 
@@ -69,14 +93,17 @@ gh copilot suggest "write a docker-compose for postgres"
 | Keys | Action |
 |------|--------|
 | `Super + Return` | Open terminal (Kitty) |
-| `Super + Space` | App launcher (Wofi) |
-| `Super + C` | Claude CLI (floating terminal) |
-| `Super + O` | Ollama interactive (floating terminal) |
+| `Super + R` | App launcher (Wofi) |
+| `Super + B` | Firefox |
+| `Super + E` | VS Code |
+| `Super + C` | Claude CLI in terminal |
+| `Super + O` | Ollama (llama3.2) in terminal |
 | `Super + H/J/K/L` | Focus window (vim-style) |
-| `Super + 1-9` | Switch workspace |
-| `Super + Q` | Close window |
+| `Super + 1–4` | Switch workspace |
+| `Super + Shift + 1–4` | Move window to workspace |
+| `Super + W` | Close window |
 | `Super + F` | Fullscreen |
-| `Print` | Screenshot selection → clipboard |
+| `Print` | Screenshot selection |
 
 ---
 
