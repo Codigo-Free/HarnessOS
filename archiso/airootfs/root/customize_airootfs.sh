@@ -67,50 +67,10 @@ chmod 440 /etc/sudoers.d/wheel
 mkinitcpio -p linux-zen
 
 # ---------------------------------------------------------------------------
-# WALLPAPER — generate dark gradient PNG for HarnessOS
+# WALLPAPER — logo.png is baked in via airootfs overlay at /usr/share/harness/logo.png
+# swaybg uses it directly as wallpaper (no generation needed)
 # ---------------------------------------------------------------------------
-mkdir -p /usr/share/harness
-python3 - << 'PYEOF'
-import struct, zlib
-
-def png_chunk(name, data):
-    raw = name + data
-    return struct.pack('>I', len(data)) + raw + struct.pack('>I', zlib.crc32(raw) & 0xffffffff)
-
-W, H = 1920, 1080
-
-# Gradient: dark purple (top) → deep teal (bottom)
-# Clearly distinct from Hyprland background_color 0x0a0e1a=(10,14,26)
-rows = []
-for y in range(H):
-    t = y / (H - 1)   # 0=top, 1=bottom
-
-    # Top: deep indigo (20,10,60) → Bottom: dark cyan (5,55,75)
-    # Clearly visible against Hyprland background_color 0x0a0e1a
-    r = int(20  - t * 15)
-    g = int(10  + t * 45)
-    b = int(60  + t * 15)
-
-    # Accent band at ~40% height
-    if 0.38 < t < 0.42:
-        fade = 1.0 - abs(t - 0.40) / 0.02
-        r = min(255, r + int(fade * 10))
-        g = min(255, g + int(fade * 20))
-        b = min(255, b + int(fade * 25))
-
-    rows.append(b'\x00' + bytes([r, g, b] * W))
-
-ihdr = struct.pack('>IIBBBBB', W, H, 8, 2, 0, 0, 0)
-idat = zlib.compress(b''.join(rows), 6)
-png  = (b'\x89PNG\r\n\x1a\n'
-        + png_chunk(b'IHDR', ihdr)
-        + png_chunk(b'IDAT', idat)
-        + png_chunk(b'IEND', b''))
-
-with open('/usr/share/harness/wallpaper.png', 'wb') as f:
-    f.write(png)
-print('Wallpaper generated.')
-PYEOF
+echo "Wallpaper: /usr/share/harness/logo.png baked in via airootfs."
 
 # ---------------------------------------------------------------------------
 # ASCII LOGO

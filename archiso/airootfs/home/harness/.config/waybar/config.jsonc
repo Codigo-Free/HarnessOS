@@ -10,6 +10,7 @@
     ],
     "modules-center": [],
     "modules-right": [
+        "network",
         "custom/browser",
         "custom/terminal",
         "custom/code",
@@ -33,6 +34,15 @@
                 4
             ]
         }
+    },
+    "network": {
+        "format-wifi": " {essid}",
+        "format-ethernet": " LAN",
+        "format-disconnected": "狼 Sin red",
+        "tooltip-format-wifi": "WiFi: {essid}\nSeñal: {signalStrength}%\nIP: {ipaddr}",
+        "tooltip-format-ethernet": "Ethernet\nIP: {ipaddr}",
+        "tooltip-format-disconnected": "Sin conexión de red",
+        "on-click": "kitty -e nmtui"
     },
     "custom/browser": {
         "format": "",
