@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+"""harness-ai — System-aware AI chat for HarnessOS using Ollama"""
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+# ── ANSI ─────────────────────────────────────────────────────────────────────
+C    = "\033[36m"   # cyan
+G    = "\033[32m"   # green
+R    = "\033[31m"   # red
+Y    = "\033[33m"   # yellow
+M    = "\033[35m"   # magenta (AI responses)
+BOLD = "\033[1m"
+DIM  = "\033[2m"
+RST  = "\033[0m"
+
+OLLAMA_URL = "http://localhost:11434/api/chat"
+SESSIONS_DIR = Path.home() / ".local" / "share" / "harness" / "ai-sessions"
+CONFIG_FILE  = Path.home() / ".config" / "harness" / "config.toml"
+DEFAULT_MODEL = "llama3.2"
+
+# ── config ────────────────────────────────────────────────────────────────────
+
+def _load_model() -> str:
+    """Read model from ~/.config/harness/config.toml if it exists."""
+    if CONFIG_FILE.exists():
+        for line in CONFIG_FILE.read_text().splitlines():
+            line = line.strip()
+            if line.startswith("model") and "=" in line:
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    return DEFAULT_MODEL
+
+# ── system context ─────────────────────────────────────────────────────────────
+
+def _run(cmd: list[str], timeout: int = 3) -> str:
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return r.stdout.strip()
+    except Exception:
+        return ""
+
+def _build_system_prompt() -> str:
+    kernel   = _run(["uname", "-r"])
+    uptime   = _run(["uptime", "-p"])
+    df       = _run(["df", "-h", "--output=target,used,avail,pcent", "-x", "tmpfs", "-x", "devtmpfs"])
+    mem      = _run(["free", "-h", "--si"])
+    failed   = _run(["systemctl", "list-units", "--failed", "--no-legend", "--plain"])
+    docker   = _run(["docker", "ps", "--format", "{{.Names}} ({{.Image}})"])
+    gpu      = _run(["nvidia-smi", "--query-gpu=name,driver_version,temperature.gpu,utilization.gpu",
+                     "--format=csv,noheader"])
+
+    # Last 20 unique shell commands (strip timestamps if using EXTENDED_HISTORY)
+    history_file = Path.home() / ".zsh_history"
+    history = ""
+    if history_file.exists():
+        try:
+            lines = history_file.read_bytes().decode("utf-8", errors="replace").splitlines()
+            cmds = []
+            for l in reversed(lines):
+                # zsh extended history format: ": timestamp:elapsed;command"
+                cmd = re.sub(r"^: \d+:\d+;", "", l).strip()
+                if cmd and cmd not in cmds:
+                    cmds.append(cmd)
+                if len(cmds) >= 20:
+                    break
+            history = "\n".join(reversed(cmds))
+        except Exception:
+            pass
+
+    parts = [
+        "You are the HarnessOS AI assistant — a helpful, concise system expert.",
+        "You run directly on the user's machine and have real-time system context.",
+        "When suggesting shell commands, wrap them in ```bash blocks.",
+        "Keep answers focused and practical. Prefer short answers unless depth is needed.",
+        "",
+        f"## System",
+        f"OS      : HarnessOS (Arch Linux)",
+        f"Kernel  : {kernel}",
+        f"Uptime  : {uptime}",
+    ]
+
+    if gpu:
+        parts.append(f"GPU     : {gpu}")
+
+    parts += [
+        "",
+        "## Memory",
+        mem or "(unavailable)",
+        "",
+        "## Disk",
+        df or "(unavailable)",
+    ]
+
+    if failed:
+        parts += ["", "## Failed services (needs attention)", failed]
+
+    if docker:
+        parts += ["", "## Running Docker containers", docker]
+    else:
+        parts.append("\nDocker  : no containers running")
+
+    if history:
+        parts += ["", "## Recent shell commands (last 20)", history]
+
+    return "\n".join(parts)
+
+# ── Ollama API ─────────────────────────────────────────────────────────────────
+
+def _stream_chat(model: str, messages: list[dict]) -> str:
+    """Stream response from Ollama API. Prints to stdout, returns full text."""
+    payload = json.dumps({
+        "model":    model,
+        "messages": messages,
+        "stream":   True,
+    }).encode()
+
+    req = urllib.request.Request(
+        OLLAMA_URL,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+
+    full_text = ""
+    print(f"\n{M}", end="", flush=True)
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            for raw_line in resp:
+                line = raw_line.decode().strip()
+                if not line:
+                    continue
+                try:
+                    chunk = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                token = chunk.get("message", {}).get("content", "")
+                if token:
+                    print(token, end="", flush=True)
+                    full_text += token
+                if chunk.get("done"):
+                    break
+    except urllib.error.URLError as e:
+        print(f"\n{R}Ollama connection error: {e}{RST}")
+        print(f"{Y}Is Ollama running?  sudo systemctl start ollama{RST}")
+        sys.exit(1)
+
+    print(f"{RST}\n")
+    return full_text
+
+def _check_ollama(model: str) -> None:
+    """Verify Ollama is running and the model is available."""
+    try:
+        urllib.request.urlopen("http://localhost:11434/api/tags", timeout=3)
+    except urllib.error.URLError:
+        print(f"{R}Ollama is not running.{RST}")
+        ans = input(f"Start it now? [Y/n] ").strip().lower()
+        if ans != "n":
+            subprocess.run(["sudo", "systemctl", "start", "ollama"])
+            import time; time.sleep(2)
+        else:
+            sys.exit(1)
+
+    # Check model exists
+    try:
+        with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
+            data = json.loads(r.read())
+            names = [m["name"].split(":")[0] for m in data.get("models", [])]
+            if model not in names and not any(model in n for n in names):
+                print(f"{Y}Model '{model}' not found. Pulling...{RST}")
+                subprocess.run(["ollama", "pull", model])
+    except Exception:
+        pass
+
+# ── command detection + approval ───────────────────────────────────────────────
+
+_CODE_BLOCK = re.compile(r"```(?:bash|sh|zsh|shell)?\n(.*?)```", re.DOTALL)
+_INLINE_CMD = re.compile(r"`([^`\n]{3,80})`")
+
+def _extract_commands(text: str) -> list[str]:
+    cmds: list[str] = []
+    for block in _CODE_BLOCK.findall(text):
+        for line in block.strip().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                cmds.append(line)
+    if not cmds:
+        # Fallback: look for inline code after action words
+        for m in _INLINE_CMD.finditer(text):
+            before = text[max(0, m.start() - 40): m.start()].lower()
+            if any(kw in before for kw in ("run", "execute", "try", "use", "type")):
+                cmds.append(m.group(1))
+    return cmds
+
+def _offer_run(cmds: list[str]) -> None:
+    if not cmds:
+        return
+    print(f"{DIM}{'─' * 60}{RST}")
+    print(f"{Y}The AI suggested {len(cmds)} command(s). Run them?{RST}\n")
+    for i, cmd in enumerate(cmds, 1):
+        print(f"  {C}[{i}]{RST} {cmd}")
+    print()
+    ans = input(f"Enter number(s) to run, {G}a{RST}=all, {R}n{RST}=skip: ").strip().lower()
+    if ans == "n" or not ans:
+        return
+    selected = cmds if ans == "a" else [
+        cmds[int(x) - 1] for x in ans.split()
+        if x.isdigit() and 1 <= int(x) <= len(cmds)
+    ]
+    print()
+    for cmd in selected:
+        print(f"{DIM}$ {cmd}{RST}")
+        subprocess.run(cmd, shell=True)
+        print()
+
+# ── session persistence ────────────────────────────────────────────────────────
+
+def _save_session(messages: list[dict]) -> None:
+    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+    path = SESSIONS_DIR / f"{ts}.json"
+    path.write_text(json.dumps(messages, indent=2))
+
+# ── explain mode ──────────────────────────────────────────────────────────────
+
+def _explain(model: str, command: str) -> None:
+    sys_prompt = _build_system_prompt()
+    messages = [
+        {"role": "system",    "content": sys_prompt},
+        {"role": "user",      "content": f"Explain what this command does:\n\n```bash\n{command}\n```\n\nBe concise. Note any risks."},
+    ]
+    print(f"\n{DIM}Explaining: {command}{RST}")
+    _stream_chat(model, messages)
+
+# ── interactive chat loop ──────────────────────────────────────────────────────
+
+def _chat_loop(model: str) -> None:
+    print(f"\n{C}{BOLD}  ⬡ HarnessOS AI{RST}  {DIM}({model}){RST}")
+    print(f"  {DIM}Type your question. Ctrl+C or 'exit' to quit.{RST}\n")
+
+    sys_prompt = _build_system_prompt()
+    messages: list[dict] = [{"role": "system", "content": sys_prompt}]
+
+    try:
+        while True:
+            try:
+                user_in = input(f"{C}you{RST} › ").strip()
+            except EOFError:
+                break
+            if not user_in:
+                continue
+            if user_in.lower() in ("exit", "quit", "q"):
+                break
+
+            messages.append({"role": "user", "content": user_in})
+            response = _stream_chat(model, messages)
+            messages.append({"role": "assistant", "content": response})
+
+            cmds = _extract_commands(response)
+            _offer_run(cmds)
+
+    except KeyboardInterrupt:
+        print(f"\n{DIM}Interrupted.{RST}")
+
+    if len(messages) > 1:
+        _save_session(messages)
+        print(f"{DIM}Session saved to {SESSIONS_DIR}{RST}\n")
+
+# ── main ──────────────────────────────────────────────────────────────────────
+
+def main() -> None:
+    p = argparse.ArgumentParser(
+        prog="harness-ai",
+        description="System-aware AI chat for HarnessOS",
+    )
+    p.add_argument("-m", "--model",   default=None,  help="Ollama model (default: llama3.2)")
+    p.add_argument("-e", "--explain", metavar="CMD", help="Explain a shell command and exit")
+    args = p.parse_args()
+
+    model = args.model or _load_model()
+    _check_ollama(model)
+
+    if args.explain:
+        _explain(model, args.explain)
+    else:
+        _chat_loop(model)
+
+
+if __name__ == "__main__":
+    main()

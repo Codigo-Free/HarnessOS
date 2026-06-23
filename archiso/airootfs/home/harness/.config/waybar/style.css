@@ -130,6 +130,21 @@ window#waybar {
 #custom-code:hover     { color: #89dceb; background: rgba(137, 220, 235, 0.15); }
 #custom-claude:hover   { color: #33ccff; background: rgba(51, 204, 255, 0.15); }
 
+/* Ollama AI status */
+#custom-ollama {
+    font-size: 13px;
+    padding: 0 12px;
+    margin: 4px 2px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+#custom-ollama.active   { color: #a6e3a1; }
+#custom-ollama.idle     { color: #e0af68; }
+#custom-ollama.inactive { color: #4a5568; }
+
+#custom-ollama:hover { background: rgba(166, 227, 161, 0.12); }
+
 /* Power button */
 #custom-power {
     color: #f38ba8;

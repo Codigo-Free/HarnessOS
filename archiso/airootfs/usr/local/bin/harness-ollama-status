@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# harness-ollama-status — Waybar custom module for Ollama status
+# Output: JSON with text, tooltip, class
+
+if ! systemctl is-active --quiet ollama 2>/dev/null; then
+    printf '{"text":" offline","tooltip":"Ollama not running","class":"inactive"}\n'
+    exit 0
+fi
+
+MODEL=$(ollama list 2>/dev/null | tail -n +2 | head -1 | awk '{print $1}' | cut -d: -f1)
+
+if [[ -z "$MODEL" ]]; then
+    printf '{"text":" ollama","tooltip":"Ollama running — no model pulled","class":"idle"}\n'
+else
+    printf '{"text":" %s","tooltip":"Ollama: %s\nClick to chat","class":"active"}\n' \
+        "$MODEL" "$MODEL"
+fi

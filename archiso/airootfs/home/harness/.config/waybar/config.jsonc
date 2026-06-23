@@ -13,6 +13,7 @@
     ],
     "modules-right": [
         "wireplumber",
+        "custom/ollama",
         "network",
         "custom/browser",
         "custom/terminal",
@@ -87,5 +88,13 @@
         "format": "",
         "tooltip": "Apagar / Reiniciar / Suspender",
         "on-click": "harness-power"
+    },
+    "custom/ollama": {
+        "exec": "harness-ollama-status",
+        "return-type": "json",
+        "interval": 15,
+        "tooltip": true,
+        "on-click": "kitty -e harness ai",
+        "format": "{}"
     }
 }

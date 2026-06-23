@@ -198,20 +198,12 @@ def cmd_update(_args) -> None:
 # ── ai ────────────────────────────────────────────────────────────────────────
 
 def cmd_ai(args) -> None:
-    model = args.model or "llama3.2"
-    if not _svc_ok("ollama"):
-        print(f"{Y}Starting Ollama...{RST}")
-        subprocess.run(["sudo", "systemctl", "start", "ollama"])
-
-    r_ol = _run(["ollama", "list"])
-    models = [l.split()[0] for l in r_ol.stdout.strip().splitlines()[1:] if l.strip()] \
-             if r_ol.returncode == 0 else []
-
-    if not any(model in m for m in models):
-        print(f"{Y}Model '{model}' not found. Pulling (~2 GB)...{RST}")
-        subprocess.run(["ollama", "pull", model])
-
-    os.execvp("ollama", ["ollama", "run", model])
+    ai_args = ["harness-ai"]
+    if args.model:
+        ai_args += ["-m", args.model]
+    if getattr(args, "explain", None):
+        ai_args += ["-e", args.explain]
+    os.execvp("harness-ai", ai_args)
 
 # ── install ───────────────────────────────────────────────────────────────────
 
@@ -315,7 +307,8 @@ Commands:
     p_inst.add_argument("profile", help="Profile name: web, ml, devops, security")
 
     p_ai = sub.add_parser("ai", help="Chat with local AI")
-    p_ai.add_argument("-m", "--model", default="llama3.2", help="Ollama model name")
+    p_ai.add_argument("-m", "--model",   default=None,  help="Ollama model name")
+    p_ai.add_argument("-e", "--explain", metavar="CMD", help="Explain a command and exit")
 
     args = p.parse_args()
 
