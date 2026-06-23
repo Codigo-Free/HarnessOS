@@ -1,0 +1,6 @@
+# HarnessOS — DevOps profile packages
+terraform
+ansible
+helm
+kubectx
+aws-cli-v2

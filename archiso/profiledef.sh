@@ -23,5 +23,10 @@ file_permissions=(
     ["/usr/local/bin/harness-welcome"]="0:0:755"
     ["/usr/local/bin/harness-online-setup"]="0:0:755"
     ["/usr/local/bin/harness-power"]="0:0:755"
+    ["/usr/local/bin/harness"]="0:0:755"
     ["/usr/local/lib/harness/detect.sh"]="0:0:755"
+    ["/usr/local/share/harness/profiles/web/setup.sh"]="0:0:755"
+    ["/usr/local/share/harness/profiles/ml/setup.sh"]="0:0:755"
+    ["/usr/local/share/harness/profiles/devops/setup.sh"]="0:0:755"
+    ["/usr/local/share/harness/profiles/security/setup.sh"]="0:0:755"
 )

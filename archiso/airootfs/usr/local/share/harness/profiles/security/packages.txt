@@ -1,0 +1,7 @@
+# HarnessOS — Security profile packages
+nmap
+wireshark-qt
+hashcat
+john
+sqlmap
+gobuster

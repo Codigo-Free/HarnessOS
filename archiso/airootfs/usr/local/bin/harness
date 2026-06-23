@@ -1,0 +1,341 @@
+#!/usr/bin/env python3
+"""harness — HarnessOS command center"""
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+# ── ANSI ─────────────────────────────────────────────────────────────────────
+C    = "\033[36m"
+G    = "\033[32m"
+R    = "\033[31m"
+Y    = "\033[33m"
+BOLD = "\033[1m"
+DIM  = "\033[2m"
+RST  = "\033[0m"
+
+VERSION = "0.2.0"
+
+BANNER = (
+    f"\n  {C}{BOLD}⬡ HarnessOS{RST}  {DIM}v{VERSION}{RST}\n"
+    f"  AI-Powered Development Environment\n"
+)
+
+PROFILES_DIR = Path("/usr/local/share/harness/profiles")
+
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+def _run(cmd: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+def _ok(label: str, detail: str = "") -> None:
+    tail = f"  {DIM}{detail}{RST}" if detail else ""
+    print(f"  {G}✓{RST} {label}{tail}")
+
+def _fail(label: str, hint: str = "") -> None:
+    tail = f"  {Y}→ {hint}{RST}" if hint else ""
+    print(f"  {R}✗{RST} {label}{tail}")
+
+def _cmd_ok(cmd: str) -> bool:
+    return _run(["which", cmd]).returncode == 0
+
+def _svc_ok(svc: str) -> bool:
+    return _run(["systemctl", "is-active", "--quiet", svc]).returncode == 0
+
+def _need_root(subcmd: str) -> None:
+    if os.geteuid() != 0:
+        print(f"{R}'{subcmd}' requires root — use: sudo harness {subcmd}{RST}")
+        sys.exit(1)
+
+# ── info ──────────────────────────────────────────────────────────────────────
+
+def cmd_info(_args) -> None:
+    print(BANNER)
+
+    cpu = "unknown"
+    try:
+        for line in Path("/proc/cpuinfo").read_text().splitlines():
+            if "model name" in line:
+                cpu = line.split(":", 1)[1].strip()
+                break
+    except OSError:
+        pass
+
+    ram = "unknown"
+    try:
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            if "MemTotal" in line:
+                kb = int(line.split()[1])
+                ram = f"{kb // 1024 // 1024} GB"
+                break
+    except OSError:
+        pass
+
+    kernel = _run(["uname", "-r"]).stdout.strip()
+
+    r_gpu = _run(["lspci"])
+    gpu_lines = [l for l in r_gpu.stdout.splitlines()
+                 if any(k in l.lower() for k in ("vga", "3d", "display", "nvidia", "radeon"))]
+    gpu = gpu_lines[0].split(":")[-1].strip() if gpu_lines else "unknown"
+
+    print(f"  {C}Hardware{RST}")
+    print(f"    CPU     : {cpu}")
+    print(f"    RAM     : {ram}")
+    print(f"    GPU     : {gpu}")
+    print(f"    Kernel  : {kernel}")
+
+    print(f"\n  {C}Services{RST}")
+    for svc in ("docker", "ollama", "NetworkManager", "bluetooth"):
+        if _svc_ok(svc):
+            print(f"    {G}●{RST} {svc}")
+        else:
+            print(f"    {R}○{RST} {svc}")
+
+    r_ol = _run(["ollama", "list"])
+    print(f"\n  {C}Ollama models{RST}")
+    if r_ol.returncode == 0:
+        models = [l.split()[0] for l in r_ol.stdout.strip().splitlines()[1:] if l.strip()]
+        if models:
+            for m in models:
+                print(f"    {G}•{RST} {m}")
+        else:
+            print(f"    {Y}none — run: ollama pull llama3.2{RST}")
+    else:
+        print(f"    {R}Ollama not running{RST}")
+
+    print()
+
+# ── doctor ────────────────────────────────────────────────────────────────────
+
+def cmd_doctor(_args) -> None:
+    print(BANNER)
+    print(f"  {BOLD}System check{RST}\n")
+    all_ok = True
+
+    def chk(label: str, ok: bool, hint: str = "") -> None:
+        nonlocal all_ok
+        if ok:
+            _ok(label)
+        else:
+            _fail(label, hint)
+            all_ok = False
+
+    # GPU
+    nvidia_ok = _run(["nvidia-smi"]).returncode == 0
+    if nvidia_ok:
+        ver = _run(["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"]).stdout.strip()
+        _ok("NVIDIA driver", ver)
+    else:
+        r = _run(["lspci"])
+        has_nvidia = "nvidia" in r.stdout.lower()
+        if has_nvidia:
+            _fail("NVIDIA driver", "sudo pacman -S nvidia-dkms nvidia-utils")
+            all_ok = False
+        else:
+            _ok("GPU (no NVIDIA detected — mesa/integrated)")
+
+    chk("Docker service",   _svc_ok("docker"),  "sudo systemctl start docker")
+    chk("Ollama service",   _svc_ok("ollama"),   "sudo systemctl start ollama")
+    chk("Claude CLI",       _cmd_ok("claude"),   "npm install -g @anthropic-ai/claude-code")
+    chk("Git",              _cmd_ok("git"),      "sudo pacman -S git")
+    chk("Node.js",          _cmd_ok("node"),     "sudo pacman -S nodejs")
+    chk("pnpm",             _cmd_ok("pnpm"),     "harness install web")
+    chk("Python 3",         _cmd_ok("python3"),  "sudo pacman -S python")
+    chk("Docker Compose",
+        _run(["docker", "compose", "version"]).returncode == 0,
+        "sudo pacman -S docker-compose")
+
+    # Ollama model
+    r_ol = _run(["ollama", "list"])
+    if r_ol.returncode == 0:
+        models = [l.split()[0] for l in r_ol.stdout.strip().splitlines()[1:] if l.strip()]
+        if models:
+            _ok("Ollama model", models[0])
+        else:
+            _fail("Ollama model", "ollama pull llama3.2")
+            all_ok = False
+    else:
+        _fail("Ollama model", "start ollama first: sudo systemctl start ollama")
+        all_ok = False
+
+    print()
+    if all_ok:
+        print(f"  {G}{BOLD}All checks passed.{RST}\n")
+    else:
+        print(f"  {Y}Some checks failed — see hints above.{RST}\n")
+
+# ── snapshot ──────────────────────────────────────────────────────────────────
+
+def cmd_snapshot(args) -> None:
+    if args.list:
+        subprocess.run(["snapper", "-c", "root", "list"])
+        return
+    _need_root("snapshot")
+    desc = getattr(args, "message", None) or "manual"
+    print(f"Creating snapshot: {desc!r} ...")
+    r = _run(["snapper", "-c", "root", "create", "--description", f"harness: {desc}"])
+    if r.returncode == 0:
+        print(f"{G}✓ Snapshot created.{RST}")
+    else:
+        print(f"{R}✗ snapper error:{RST}\n{r.stderr.strip()}")
+        sys.exit(1)
+
+# ── update ────────────────────────────────────────────────────────────────────
+
+def cmd_update(_args) -> None:
+    _need_root("update")
+    print(f"{C}Creating pre-update snapshot...{RST}")
+    _run(["snapper", "-c", "root", "create", "--description", "harness: pre-update"])
+    print(f"{C}Running pacman -Syu...{RST}")
+    subprocess.run(["pacman", "-Syu"], check=True)
+    print(f"{C}Creating post-update snapshot...{RST}")
+    _run(["snapper", "-c", "root", "create", "--description", "harness: post-update"])
+    print(f"{G}✓ System updated. Snapshots saved before and after.{RST}")
+
+# ── ai ────────────────────────────────────────────────────────────────────────
+
+def cmd_ai(args) -> None:
+    model = args.model or "llama3.2"
+    if not _svc_ok("ollama"):
+        print(f"{Y}Starting Ollama...{RST}")
+        subprocess.run(["sudo", "systemctl", "start", "ollama"])
+
+    r_ol = _run(["ollama", "list"])
+    models = [l.split()[0] for l in r_ol.stdout.strip().splitlines()[1:] if l.strip()] \
+             if r_ol.returncode == 0 else []
+
+    if not any(model in m for m in models):
+        print(f"{Y}Model '{model}' not found. Pulling (~2 GB)...{RST}")
+        subprocess.run(["ollama", "pull", model])
+
+    os.execvp("ollama", ["ollama", "run", model])
+
+# ── install ───────────────────────────────────────────────────────────────────
+
+def cmd_install(args) -> None:
+    _need_root("install")
+    profile_dir = PROFILES_DIR / args.profile
+    if not profile_dir.exists():
+        available = sorted(p.name for p in PROFILES_DIR.iterdir() if p.is_dir()) \
+                    if PROFILES_DIR.exists() else []
+        print(f"{R}Unknown profile: {args.profile!r}{RST}")
+        if available:
+            print(f"Available: {', '.join(available)}")
+        else:
+            print("No profiles installed.")
+        sys.exit(1)
+
+    print(f"\n{C}{BOLD}Installing profile: {args.profile}{RST}\n")
+
+    pkg_file = profile_dir / "packages.txt"
+    if pkg_file.exists():
+        pkgs = [l.strip() for l in pkg_file.read_text().splitlines()
+                if l.strip() and not l.startswith("#")]
+        if pkgs:
+            print(f"{C}Packages: {', '.join(pkgs)}{RST}")
+            subprocess.run(["pacman", "-S", "--needed", "--noconfirm"] + pkgs, check=True)
+
+    setup = profile_dir / "setup.sh"
+    if setup.exists():
+        print(f"{C}Running profile setup script...{RST}")
+        subprocess.run(["bash", str(setup)], check=True)
+
+    print(f"\n{G}✓ Profile '{args.profile}' installed.{RST}\n")
+
+# ── setup ─────────────────────────────────────────────────────────────────────
+
+def cmd_setup(_args) -> None:
+    print(BANNER)
+    print(f"  {BOLD}Setup Wizard{RST}\n")
+
+    # GitHub
+    if _cmd_ok("gh"):
+        if _run(["gh", "auth", "status"]).returncode != 0:
+            ans = input(f"  {Y}GitHub CLI not authenticated.{RST} Authenticate now? [Y/n] ").strip()
+            if ans.lower() != "n":
+                subprocess.run(["gh", "auth", "login"])
+        else:
+            _ok("GitHub CLI")
+
+    # Claude CLI
+    if _cmd_ok("claude"):
+        _ok("Claude CLI")
+    else:
+        ans = input(f"  {Y}Claude CLI not installed.{RST} Install now? [Y/n] ").strip()
+        if ans.lower() != "n":
+            subprocess.run(["npm", "install", "-g", "@anthropic-ai/claude-code"], check=True)
+
+    # Ollama model
+    r_ol = _run(["ollama", "list"])
+    models = [l.split()[0] for l in r_ol.stdout.strip().splitlines()[1:] if l.strip()] \
+             if r_ol.returncode == 0 else []
+    if models:
+        _ok("Ollama model", models[0])
+    else:
+        ans = input(f"  {Y}No Ollama models found.{RST} Pull llama3.2 (~2 GB)? [Y/n] ").strip()
+        if ans.lower() != "n":
+            subprocess.run(["ollama", "pull", "llama3.2"])
+
+    print(f"\n  {G}Setup complete.{RST} Run {C}harness doctor{RST} to verify.\n")
+
+# ── main ──────────────────────────────────────────────────────────────────────
+
+def main() -> None:
+    p = argparse.ArgumentParser(
+        prog="harness",
+        description="HarnessOS command center",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""\
+Commands:
+  info                     System info and service status
+  doctor                   Verify all tools are working
+  setup                    Post-install setup wizard
+  update                   Safe system update with BTRFS snapshots
+  snapshot [-l] [-m MSG]   Manage BTRFS snapshots
+  install <profile>        Install a developer profile (web, ml, devops)
+  ai [-m MODEL]            Chat with local AI (Ollama)
+""",
+    )
+    p.add_argument("--version", action="version", version=f"harness {VERSION}")
+    sub = p.add_subparsers(dest="cmd")
+
+    sub.add_parser("info",   help="System info and service status")
+    sub.add_parser("doctor", help="Verify all tools are working")
+    sub.add_parser("setup",  help="Post-install setup wizard")
+    sub.add_parser("update", help="Safe update with BTRFS snapshots")
+
+    p_snap = sub.add_parser("snapshot", help="BTRFS snapshot management")
+    p_snap.add_argument("-l", "--list",    action="store_true", help="List snapshots")
+    p_snap.add_argument("-m", "--message", help="Snapshot description")
+
+    p_inst = sub.add_parser("install", help="Install a developer profile")
+    p_inst.add_argument("profile", help="Profile name: web, ml, devops, security")
+
+    p_ai = sub.add_parser("ai", help="Chat with local AI")
+    p_ai.add_argument("-m", "--model", default="llama3.2", help="Ollama model name")
+
+    args = p.parse_args()
+
+    cmds = {
+        "info":     cmd_info,
+        "doctor":   cmd_doctor,
+        "setup":    cmd_setup,
+        "update":   cmd_update,
+        "snapshot": cmd_snapshot,
+        "install":  cmd_install,
+        "ai":       cmd_ai,
+    }
+
+    if args.cmd in cmds:
+        cmds[args.cmd](args)
+    else:
+        print(BANNER)
+        p.print_help()
+        print()
+
+
+if __name__ == "__main__":
+    main()
