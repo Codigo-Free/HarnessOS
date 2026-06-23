@@ -8,8 +8,11 @@
         "custom/logo",
         "hyprland/workspaces"
     ],
-    "modules-center": [],
+    "modules-center": [
+        "clock"
+    ],
     "modules-right": [
+        "wireplumber",
         "network",
         "custom/browser",
         "custom/terminal",
@@ -34,6 +37,22 @@
                 4
             ]
         }
+    },
+    "clock": {
+        "format": "  {:%H:%M  %d %b %Y}",
+        "tooltip-format": "<big>{:%B %Y}</big>\n<tt><small>{calendar}</small></tt>",
+        "format-alt": "{:%A, %d de %B de %Y}"
+    },
+    "wireplumber": {
+        "format": " {volume}%",
+        "format-muted": " Mute",
+        "format-icons": [
+            "",
+            "",
+            ""
+        ],
+        "on-click": "pulsemixer",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
     },
     "network": {
         "format-wifi": " {essid}",
