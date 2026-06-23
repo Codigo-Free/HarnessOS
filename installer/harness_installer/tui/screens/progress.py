@@ -10,6 +10,7 @@ from harness_installer.core import chroot as chroot_core
 from harness_installer.core import gpu as gpu_core
 from harness_installer.core import bootloader as boot_core
 from harness_installer.core import snapshots as snap_core
+from harness_installer.core import dotfiles as dotfiles_core
 
 
 STEPS = [
@@ -24,6 +25,7 @@ STEPS = [
     "Installing bootloader",
     "Configuring snapper",
     "Installing npm globals (Claude CLI, pnpm, TypeScript)",
+    "Deploying dotfiles",
     "Generating fstab",
     "Done!",
 ]
@@ -124,16 +126,20 @@ class ProgressScreen(Screen):
             self._log("Installing Claude CLI, pnpm, TypeScript...")
             chroot_core.install_npm_globals(mp)
 
-            self._set_step("Generating fstab", 12)
+            self._set_step("Deploying dotfiles", 12)
+            self._log(f"Copying Hyprland, waybar, kitty configs to /home/{cfg.username}...")
+            dotfiles_core.deploy_dotfiles(mp, cfg.username)
+
+            self._set_step("Generating fstab", 13)
             self._log("Generating /etc/fstab...")
             disk_core.generate_fstab(mp)
 
-            self._set_step("Done!", 13)
+            self._set_step("Done!", 14)
             self._log("")
             self._log("✓ HarnessOS installed successfully!")
             self._log("  Remove the installation media and reboot.")
             self._log("  First login: user = " + cfg.username)
-            self._log("  Start Hyprland: exec Hyprland")
+            self._log("  Hyprland starts automatically on first login.")
             self.call_from_thread(
                 self.query_one("#step-label", Static).update,
                 "Installation complete! You can now reboot.",

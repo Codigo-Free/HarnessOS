@@ -107,6 +107,12 @@ def install_nvidia_drivers(mountpoint: str, install_cuda: bool = True) -> None:
         "export NVD_BACKEND=direct\n"
     )
 
+    # Regenerate initramfs with NVIDIA modules now included
+    subprocess.run(
+        ["arch-chroot", mountpoint, "mkinitcpio", "-p", "linux-zen"],
+        check=True,
+    )
+
 
 def install_amd_drivers(mountpoint: str) -> None:
     subprocess.run(

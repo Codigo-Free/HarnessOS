@@ -82,13 +82,17 @@ def create_user(
         "useradd", "-m", "-G", "wheel,docker,audio,video,input",
         "-s", shell, username,
     ])
-    # Set password via chpasswd
-    proc = subprocess.run(
+    subprocess.run(
         ["arch-chroot", mountpoint, "chpasswd"],
         input=f"{username}:{password}\n",
         text=True,
         check=True,
     )
+    # Enable sudo for wheel group (uncomment the NOPASSWD-free line)
+    sudoers_wheel = Path(mountpoint) / "etc" / "sudoers.d" / "wheel"
+    sudoers_wheel.parent.mkdir(parents=True, exist_ok=True)
+    sudoers_wheel.write_text("%wheel ALL=(ALL:ALL) ALL\n")
+    sudoers_wheel.chmod(0o440)
 
 
 def install_npm_globals(mountpoint: str) -> None:
