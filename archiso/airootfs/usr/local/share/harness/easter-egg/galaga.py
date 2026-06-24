@@ -4,6 +4,7 @@
 import sys
 import math
 import random
+from pathlib import Path
 import pygame
 
 W, H = 800, 700
@@ -23,10 +24,10 @@ ORANGE = (255, 158, 100)
 
 
 # ---------------------------------------------------------------------------
-# Drawing helpers (no external assets)
+# Drawing helpers
 # ---------------------------------------------------------------------------
 
-def draw_ship(surf, x, y, alpha=255):
+def draw_ship(surf, x, y, size=None):
     pts = [
         (x,      y - 18),
         (x - 14, y + 12),
@@ -48,7 +49,7 @@ def draw_drone(surf, x, y, size=13):
 def draw_bee(surf, x, y, size=15):
     pygame.draw.ellipse(surf, PURPLE, (x - 10, y - size, 20, size * 2))
     pygame.draw.ellipse(surf, YELLOW, (x - size, y - 7, size, 14))
-    pygame.draw.ellipse(surf, YELLOW, (x,       y - 7, size, 14))
+    pygame.draw.ellipse(surf, YELLOW, (x,        y - 7, size, 14))
     pygame.draw.circle(surf, WHITE, (x, y), 5)
 
 
@@ -93,10 +94,10 @@ class Enemy:
         self.home_y = 100 + row * 52
         self.x = float(self.home_x)
         self.y = float(self.home_y)
-        self.alive   = True
+        self.alive    = True
         self.bullets: list[Bullet] = []
         self.swooping = False
-        self._phase  = 0.0
+        self._phase   = 0.0
         self._ox = self._oy = 0.0
         self.shoot_cd = random.randint(120, 500)
 
@@ -139,14 +140,14 @@ class Enemy:
 
 class Player:
     def __init__(self, score=0, lives=3):
-        self.x      = float(W // 2)
-        self.y      = float(H - 75)
-        self.speed  = 5.5
+        self.x        = float(W // 2)
+        self.y        = float(H - 75)
+        self.speed    = 5.5
         self.bullets: list[Bullet] = []
         self.shoot_cd = 0
-        self.score  = score
-        self.lives  = lives
-        self.inv    = 0   # invincibility frames after hit
+        self.score    = score
+        self.lives    = lives
+        self.inv      = 0
 
     def shoot(self):
         if self.shoot_cd <= 0:
@@ -179,24 +180,6 @@ class Player:
 
 
 # ---------------------------------------------------------------------------
-# Formation factory
-# ---------------------------------------------------------------------------
-
-def make_enemies(wave=1):
-    layout = [
-        ('boss',  10),
-        ('bee',   10),
-        ('drone', 10),
-        ('drone', 10),
-    ]
-    out = []
-    for row, (etype, cols) in enumerate(layout):
-        for col in range(cols):
-            out.append(Enemy(col, row, etype))
-    return out
-
-
-# ---------------------------------------------------------------------------
 # Stars
 # ---------------------------------------------------------------------------
 
@@ -220,11 +203,121 @@ def draw_stars(surf, stars):
                            (int(s[0]), int(s[1])), s[4])
 
 
+def make_enemies():
+    layout = [('boss', 10), ('bee', 10), ('drone', 10), ('drone', 10)]
+    return [Enemy(col, row, etype) for row, (etype, cols) in enumerate(layout) for col in range(cols)]
+
+
 # ---------------------------------------------------------------------------
-# Screens
+# Intro screen: 3 flashes → portrait → fade to black
 # ---------------------------------------------------------------------------
 
-def screen_title(surface, clock, stars, fonts):
+def _find_portrait() -> str | None:
+    candidates = [
+        Path("/usr/local/share/harness/easter-egg/portrait.png"),
+        Path("/usr/local/share/harness/easter-egg/portrait.jpg"),
+    ]
+    home = Path.home() / ".local/share/harness/easter-egg"
+    for ext in ("png", "jpg", "jpeg", "webp"):
+        candidates.append(home / f"portrait.{ext}")
+    for p in candidates:
+        if p.exists():
+            return str(p)
+    return None
+
+
+def screen_intro(surface, clock) -> bool:
+    """Flash 3×, show portrait fullscreen, fade to black. Returns False on quit."""
+
+    def pump() -> bool:
+        """Drain event queue; return False if quit requested."""
+        for ev in pygame.event.get():
+            if ev.type == pygame.QUIT:
+                return False
+            if ev.type == pygame.KEYDOWN and ev.key in (pygame.K_q, pygame.K_ESCAPE):
+                return False
+        return True
+
+    # --- 3 white flashes ---
+    for _ in range(3):
+        surface.fill((255, 255, 255))
+        pygame.display.flip()
+        pygame.time.wait(90)
+        if not pump():
+            return False
+        surface.fill((0, 0, 0))
+        pygame.display.flip()
+        pygame.time.wait(90)
+        if not pump():
+            return False
+
+    # --- Load portrait ---
+    path = _find_portrait()
+    if not path:
+        return True  # no portrait, skip to game
+
+    try:
+        img = pygame.image.load(path).convert()
+    except Exception:
+        return True
+
+    # Scale to fit window, keep aspect ratio
+    iw, ih = img.get_size()
+    scale   = min(W / iw, H / ih)
+    nw, nh  = int(iw * scale), int(ih * scale)
+    portrait = pygame.transform.smoothscale(img, (nw, nh))
+    px = (W - nw) // 2
+    py = (H - nh) // 2
+
+    # --- Fade in portrait ---
+    fade = pygame.Surface((W, H))
+    fade.fill((0, 0, 0))
+    for alpha in range(255, -1, -10):
+        if not pump():
+            return False
+        fade.set_alpha(alpha)
+        surface.fill((0, 0, 0))
+        surface.blit(portrait, (px, py))
+        surface.blit(fade, (0, 0))
+        pygame.display.flip()
+        clock.tick(FPS)
+
+    # --- Hold (3 s or any key to skip) ---
+    surface.fill((0, 0, 0))
+    surface.blit(portrait, (px, py))
+    pygame.display.flip()
+
+    start = pygame.time.get_ticks()
+    skip = False
+    while pygame.time.get_ticks() - start < 3000 and not skip:
+        for ev in pygame.event.get():
+            if ev.type == pygame.QUIT:
+                return False
+            if ev.type == pygame.KEYDOWN:
+                if ev.key in (pygame.K_q, pygame.K_ESCAPE):
+                    return False
+                skip = True
+        clock.tick(FPS)
+
+    # --- Fade out portrait ---
+    for alpha in range(0, 256, 10):
+        if not pump():
+            return False
+        fade.set_alpha(alpha)
+        surface.fill((0, 0, 0))
+        surface.blit(portrait, (px, py))
+        surface.blit(fade, (0, 0))
+        pygame.display.flip()
+        clock.tick(FPS)
+
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Game screens
+# ---------------------------------------------------------------------------
+
+def screen_title(surface, clock, stars, fonts) -> bool:
     f_big, f_med, f_sm = fonts
     t = 0
     while True:
@@ -241,7 +334,6 @@ def screen_title(surface, clock, stars, fonts):
         draw_stars(surface, stars)
 
         pulse = 0.6 + 0.4 * abs(math.sin(t * 0.04))
-
         title = f_big.render("HARNESS  OS", True, CYAN)
         sub   = f_med.render("G  A  L  A  G  A", True,
                               tuple(int(c * pulse) for c in YELLOW))
@@ -252,7 +344,6 @@ def screen_title(surface, clock, stars, fonts):
         surface.blit(title, (W // 2 - title.get_width() // 2, 180))
         surface.blit(sub,   (W // 2 - sub.get_width()   // 2, 268))
 
-        # decorative ships & enemies
         cx = W // 2
         draw_ship(surface,  cx - 140, 370)
         draw_boss(surface,  cx,       355, 22)
@@ -270,7 +361,7 @@ def screen_title(surface, clock, stars, fonts):
         t += 1
 
 
-def screen_gameover(surface, clock, stars, fonts, score):
+def screen_gameover(surface, clock, stars, fonts, score) -> bool:
     f_big, _, f_sm = fonts
     t = 0
     while True:
@@ -285,24 +376,21 @@ def screen_gameover(surface, clock, stars, fonts, score):
 
         surface.fill(BG)
         draw_stars(surface, stars)
-
         blink = WHITE if t % 60 < 40 else DIM
         go   = f_big.render("GAME  OVER", True, RED)
         sc   = f_sm.render(f"Score: {score:06d}", True, WHITE)
         hint = f_sm.render("ENTER restart   Q quit", True, blink)
-
         surface.blit(go,   (W // 2 - go.get_width()   // 2, H // 2 - 80))
         surface.blit(sc,   (W // 2 - sc.get_width()   // 2, H // 2))
         surface.blit(hint, (W // 2 - hint.get_width() // 2, H // 2 + 60))
-
         pygame.display.flip()
         clock.tick(FPS)
         t += 1
 
 
-def screen_wave_announce(surface, clock, stars, fonts, wave):
+def screen_wave(surface, clock, stars, fonts, wave) -> bool:
     f_big = fonts[0]
-    for frame in range(120):
+    for _ in range(120):
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 return False
@@ -317,43 +405,29 @@ def screen_wave_announce(surface, clock, stars, fonts, wave):
     return True
 
 
-# ---------------------------------------------------------------------------
-# Main game loop
-# ---------------------------------------------------------------------------
-
 def run_game(surface, clock, stars, fonts, wave=1, score=0, lives=3):
-    """
-    Returns (score, lives, signal)
-    signal: 'quit' | 'dead' | 'next_wave'
-    """
-    f_big, _, f_hud = fonts
-
+    """Returns (score, lives, signal) — signal: 'quit' | 'dead' | 'next_wave'"""
+    _, _, f_hud = fonts
     player  = Player(score=score, lives=lives)
-    enemies = make_enemies(wave)
+    enemies = make_enemies()
 
-    # Formation movement
-    fm_dx   = 0.0
-    fm_dy   = 0.0
-    fm_dir  = 1
-    fm_spd  = min(2.0, 0.5 + (wave - 1) * 0.22)
+    fm_dx  = 0.0
+    fm_dy  = 0.0
+    fm_dir = 1
+    fm_spd = min(2.0, 0.5 + (wave - 1) * 0.22)
     fm_drop = 22.0
-
     bullet_speed = min(11, 7 + (wave - 1))
-
     swoop_cd = random.randint(160, 340)
     explosions: list[dict] = []
 
     while True:
         clock.tick(FPS)
-
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 return player.score, player.lives, 'quit'
-            if ev.type == pygame.KEYDOWN:
-                if ev.key in (pygame.K_ESCAPE, pygame.K_q):
-                    return player.score, player.lives, 'quit'
+            if ev.type == pygame.KEYDOWN and ev.key in (pygame.K_ESCAPE, pygame.K_q):
+                return player.score, player.lives, 'quit'
 
-        # --- Input ---
         keys = pygame.key.get_pressed()
         dx = 0
         if keys[pygame.K_LEFT]  or keys[pygame.K_a]: dx = -1
@@ -362,10 +436,9 @@ def run_game(surface, clock, stars, fonts, wave=1, score=0, lives=3):
             player.shoot()
         player.update(dx)
 
-        # --- Formation movement ---
-        alive_in_form = [e for e in enemies if e.alive and not e.swooping]
-        if alive_in_form:
-            xs = [e.home_x + fm_dx for e in alive_in_form]
+        alive_form = [e for e in enemies if e.alive and not e.swooping]
+        if alive_form:
+            xs = [e.home_x + fm_dx for e in alive_form]
             if max(xs) >= W - 55:
                 fm_dir  = -1
                 fm_dy  += fm_drop
@@ -374,7 +447,6 @@ def run_game(surface, clock, stars, fonts, wave=1, score=0, lives=3):
                 fm_dy  += fm_drop
         fm_dx += fm_spd * fm_dir
 
-        # --- Swoop ---
         swoop_cd -= 1
         if swoop_cd <= 0:
             swoop_cd = max(70, random.randint(100, 280) - wave * 8)
@@ -385,7 +457,6 @@ def run_game(surface, clock, stars, fonts, wave=1, score=0, lives=3):
         for e in enemies:
             e.update(fm_dx, fm_dy, bullet_speed=bullet_speed)
 
-        # --- Collisions: player bullets → enemies ---
         for pb in player.bullets[:]:
             for e in enemies:
                 if e.alive and abs(pb.x - e.x) < e.size + 6 and abs(pb.y - e.y) < e.size + 6:
@@ -393,57 +464,44 @@ def run_game(surface, clock, stars, fonts, wave=1, score=0, lives=3):
                     player.score += e.pts
                     if pb in player.bullets:
                         player.bullets.remove(pb)
-                    explosions.append({
-                        'x': int(e.x), 'y': int(e.y),
-                        'r': 4.0, 'max': 32.0, 'color': e.color
-                    })
+                    explosions.append({'x': int(e.x), 'y': int(e.y),
+                                       'r': 4.0, 'max': 32.0, 'color': e.color})
                     break
 
-        # --- Collisions: enemy bullets → player ---
         for e in enemies:
             for b in e.bullets[:]:
                 if abs(b.x - player.x) < 14 and abs(b.y - player.y) < 14:
                     if player.hit():
                         e.bullets.remove(b)
-                        explosions.append({
-                            'x': int(player.x), 'y': int(player.y),
-                            'r': 4.0, 'max': 50.0, 'color': GREEN
-                        })
+                        explosions.append({'x': int(player.x), 'y': int(player.y),
+                                           'r': 4.0, 'max': 50.0, 'color': GREEN})
 
-        # Enemies too low
         for e in enemies:
             if e.alive and e.y > H - 50:
                 player.lives = 0
 
         if player.lives <= 0:
             return player.score, 0, 'dead'
-
         if all(not e.alive for e in enemies):
             return player.score, player.lives, 'next_wave'
 
-        # --- Draw ---
         surface.fill(BG)
         draw_stars(surface, stars)
-
         for e in enemies:
             e.draw(surface)
         player.draw(surface)
-
         for ex in explosions[:]:
             ex['r'] += 2.5
-            pygame.draw.circle(surface, ex['color'],
-                               (ex['x'], ex['y']), int(ex['r']), 2)
+            pygame.draw.circle(surface, ex['color'], (ex['x'], ex['y']), int(ex['r']), 2)
             if ex['r'] >= ex['max']:
                 explosions.remove(ex)
 
-        # HUD
-        sc_txt = f_hud.render(f"SCORE  {player.score:06d}", True, WHITE)
-        wv_txt = f_hud.render(f"WAVE  {wave}", True, CYAN)
-        lv_txt = f_hud.render("SHIP  " + "■ " * max(0, player.lives), True, GREEN)
-        surface.blit(sc_txt, (20, 12))
-        surface.blit(wv_txt, (W // 2 - wv_txt.get_width() // 2, 12))
-        surface.blit(lv_txt, (W - lv_txt.get_width() - 20, 12))
-
+        sc_t = f_hud.render(f"SCORE  {player.score:06d}", True, WHITE)
+        wv_t = f_hud.render(f"WAVE  {wave}", True, CYAN)
+        lv_t = f_hud.render("SHIP  " + "■ " * max(0, player.lives), True, GREEN)
+        surface.blit(sc_t, (20, 12))
+        surface.blit(wv_t, (W // 2 - wv_t.get_width() // 2, 12))
+        surface.blit(lv_t, (W - lv_t.get_width() - 20, 12))
         pygame.display.flip()
 
 
@@ -458,22 +516,27 @@ def main():
     clock = pygame.time.Clock()
 
     fonts = (
-        pygame.font.SysFont("monospace", 52, bold=True),   # big
-        pygame.font.SysFont("monospace", 34, bold=True),   # med
-        pygame.font.SysFont("monospace", 20, bold=True),   # hud / sm
+        pygame.font.SysFont("monospace", 52, bold=True),
+        pygame.font.SysFont("monospace", 34, bold=True),
+        pygame.font.SysFont("monospace", 20, bold=True),
     )
     stars = make_stars()
 
+    # --- Easter egg intro (flashes + portrait) ---
+    if not screen_intro(surface, clock):
+        pygame.quit()
+        sys.exit()
+
+    # --- Game loop ---
     while True:
         if not screen_title(surface, clock, stars, fonts):
             break
 
         wave, score, lives = 1, 0, 3
-
         while True:
             result_score, result_lives, signal = run_game(
                 surface, clock, stars, fonts,
-                wave=wave, score=score, lives=lives
+                wave=wave, score=score, lives=lives,
             )
             score = result_score
             lives = result_lives
@@ -481,16 +544,14 @@ def main():
             if signal == 'quit':
                 pygame.quit()
                 sys.exit()
-
             elif signal == 'next_wave':
                 wave += 1
-                if not screen_wave_announce(surface, clock, stars, fonts, wave):
+                if not screen_wave(surface, clock, stars, fonts, wave):
                     pygame.quit()
                     sys.exit()
-
-            else:  # 'dead'
+            else:  # dead
                 if not screen_gameover(surface, clock, stars, fonts, score):
-                    break   # back to title
+                    break
                 wave, score, lives = 1, 0, 3
 
     pygame.quit()
