@@ -8,6 +8,17 @@
 
 > Ships with Claude CLI, GitHub Copilot, Ollama, Hyprland, Docker, and a complete dev stack — ready in minutes, not hours.
 
+## Download
+
+| Version | Size | Link |
+|---------|------|------|
+| **v2026.06.23** (latest) | 3.0 GB | [harnessOS-2026.06.23-x86_64.iso](http://148.113.174.52:8899/harnessOS-2026.06.23-x86_64.iso) |
+
+```bash
+# Flash to USB after download
+sudo dd if=harnessOS-2026.06.23-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
+```
+
 ---
 
 ## What ships out of the box
@@ -79,9 +90,11 @@ harness ai --explain "cmd"    # Explain a shell command in context
 ## Quick Install
 
 ```bash
-# 1. Download the latest ISO
+# 1. Download the latest ISO (3.0 GB)
+wget http://148.113.174.52:8899/harnessOS-2026.06.23-x86_64.iso
+
 # 2. Flash to USB
-sudo dd if=harnessOS-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
+sudo dd if=harnessOS-2026.06.23-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
 
 # 3. Boot from USB → run installer
 harness-install
