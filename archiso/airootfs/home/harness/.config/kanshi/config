@@ -1,0 +1,41 @@
+# kanshi — display profile manager for Wayland/Hyprland
+#
+# kanshi auto-applies the first matching profile when monitors connect/disconnect.
+# It runs automatically on login (exec-once in hyprland.conf).
+#
+# List connected outputs:   wlr-randr
+# Reload kanshi:            kanshictl reload
+# Switch profile manually:  kanshictl switch <profile-name>
+
+# ─── Solo laptop / monitor único ────────────────────────────────────────────
+profile laptop-only {
+    output * enable
+}
+
+# ─── Dos monitores: laptop + HDMI derecha ───────────────────────────────────
+# El monitor externo va a la derecha del portátil.
+# Ajusta las resoluciones con las tuyas (wlr-randr para verlas).
+profile dual-right {
+    output eDP-1    enable  position 0,0      mode 1920x1080@60Hz
+    output HDMI-A-1 enable  position 1920,0   mode 1920x1080@60Hz
+}
+
+# ─── Dos monitores: laptop + DisplayPort derecha ────────────────────────────
+profile dual-dp-right {
+    output eDP-1 enable  position 0,0     mode 1920x1080@60Hz
+    output DP-1  enable  position 1920,0  mode 1920x1080@60Hz
+}
+
+# ─── Monitor externo solo (modo presentación / escritorio externo) ───────────
+profile external-only {
+    output eDP-1    disable
+    output HDMI-A-1 enable  position 0,0
+}
+
+# ─── Espejo (mismo contenido en ambas pantallas) ────────────────────────────
+# Hyprland soporta mirror via: hyprctl keyword monitor HDMI-A-1,preferred,auto,1,mirror,eDP-1
+# Este perfil deja ambas activas en la misma posición:
+profile mirror {
+    output eDP-1    enable position 0,0
+    output HDMI-A-1 enable position 0,0
+}
