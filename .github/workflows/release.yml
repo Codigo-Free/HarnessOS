@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-release:
-    name: Build ISO and Create GitHub Release
+    name: Build ISO and publish release
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
@@ -17,11 +17,19 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install archiso
-        run: pacman -Sy --noconfirm archiso mkinitcpio-archiso
+      - name: Install archiso + ssh tools
+        run: pacman -Sy --noconfirm archiso mkinitcpio-archiso openssh
+
+      - name: Inject installer into airootfs
+        run: |
+          TARGET="archiso/airootfs/usr/local/lib/harness/installer"
+          rm -rf "$TARGET"
+          mkdir -p "$TARGET"
+          cp -r installer/harness_installer "$TARGET/"
+          cp    installer/requirements.txt   "$TARGET/"
 
       - name: Build ISO
         run: |
@@ -31,43 +39,72 @@ jobs:
       - name: Generate checksums
         run: |
           cd out
-          for f in *.iso; do
-            sha256sum "${f}" > "${f}.sha256"
-            md5sum    "${f}" > "${f}.md5"
-          done
+          ISO=$(ls *.iso | head -1)
+          sha256sum "${ISO}" > "${ISO}.sha256"
+          echo "ISO_NAME=${ISO}" >> $GITHUB_ENV
+          echo "ISO_SIZE=$(du -sh ${ISO} | cut -f1)" >> $GITHUB_ENV
+
+      - name: Upload ISO to VPS
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST:    ${{ secrets.VPS_HOST }}
+          VPS_USER:    ${{ secrets.VPS_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/ci_key
+          chmod 600 ~/.ssh/ci_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # Remove old ISOs and upload the new one
+          ssh -i ~/.ssh/ci_key "$VPS_USER@$VPS_HOST" \
+            "rm -f /var/www/html/harnessOS/*.iso && echo 'old ISOs removed'"
+          scp -i ~/.ssh/ci_key \
+            out/${{ env.ISO_NAME }} \
+            "$VPS_USER@$VPS_HOST:/var/www/html/harnessOS/"
+          echo "Upload complete"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            out/*.iso
-            out/*.sha256
-            out/*.md5
-          generate_release_notes: true
+          files: out/*.sha256
           name: "HarnessOS ${{ github.ref_name }}"
+          generate_release_notes: true
           body: |
             ## HarnessOS ${{ github.ref_name }}
 
-            ### Installation
-            1. Download the `.iso` file below
-            2. Flash to USB:
-               ```bash
-               sudo dd if=harnessOS-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
-               ```
-            3. Boot from USB → run `harness-install`
+            > **ISO is 3 GB — hosted on VPS** (GitHub has a 2 GB release limit)
 
-            ### Verify download
+            ### Download
             ```bash
-            sha256sum -c harnessOS-*.iso.sha256
+            wget http://${{ secrets.VPS_HOST }}:8899/${{ env.ISO_NAME }}
+            ```
+
+            ### Flash to USB
+            ```bash
+            sudo dd if=${{ env.ISO_NAME }} of=/dev/sdX bs=4M status=progress oflag=sync
+            ```
+
+            ### Install
+            Boot from USB → run `harness-install` → follow the TUI wizard
+
+            ### Post-install
+            ```bash
+            harness setup    # wizard: GitHub, Claude, Ollama model
+            harness doctor   # verify everything works
             ```
 
             ### What's included
-            - Hyprland + Waybar + Kitty (Tokyo Night theme)
-            - Claude CLI, GitHub Copilot, Ollama
-            - Docker, docker-compose
-            - Python 3, Node.js LTS, .NET SDK, Java (OpenJDK), PHP
-            - pnpm, TypeScript, ts-node
-            - linux-zen kernel (optimized for desktop latency)
-            - BTRFS with automatic snapper snapshots
+            - `harness` CLI: info, doctor, setup, update, snapshot, install profiles, ai
+            - `harness ai` — local AI chat that sees your system state in real-time
+            - Hyprland + Waybar + Kitty (Tokyo Night)
+            - Claude CLI, GitHub Copilot, Ollama (llama3.2)
+            - Docker + NVIDIA container runtime (auto-configured on install)
+            - Python 3, Node.js LTS, .NET SDK, Java, PHP
+            - linux-zen kernel + BTRFS with snapper auto-snapshots
+            - Developer profiles: `harness install web|ml|devops|security`
+
+            ### Verify download
+            ```bash
+            sha256sum -c ${{ env.ISO_NAME }}.sha256
+            ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

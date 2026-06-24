@@ -36,3 +36,36 @@ Repository: https://github.com/Codigo-Free/HarnessOS
 2. `./scripts/build-docker.sh` to build ISO
 3. `./scripts/test-qemu.sh` to boot test
 4. Tag `vYYYY.MM.DD` → GitHub Actions builds and publishes release ISO
+
+## CI/CD — GitHub Actions
+
+Two workflows in `.github/workflows/`:
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `build-iso.yml` | push to `main` (archiso/**, installer/**, dotfiles/**) | Build ISO, upload as artifact (7-day retention) |
+| `release.yml` | push tag `v*` | Build ISO → upload to VPS → create GitHub Release |
+
+**CRITICAL — installer injection**: Both workflows run this before `mkarchiso`:
+```bash
+TARGET="archiso/airootfs/usr/local/lib/harness/installer"
+cp -r installer/harness_installer "$TARGET/"
+cp    installer/requirements.txt   "$TARGET/"
+```
+The `airootfs/usr/local/lib/harness/installer/` path is gitignored — it's generated at build time.
+
+**GitHub Secrets required** (set at https://github.com/Codigo-Free/HarnessOS/settings/secrets/actions):
+
+| Secret | Value |
+|---|---|
+| `VPS_SSH_KEY` | Private key of `github-actions-harnessOS-ci` ED25519 keypair |
+| `VPS_HOST` | `148.113.174.52` |
+| `VPS_USER` | `debian` |
+
+The CI public key is already in `/home/debian/.ssh/authorized_keys` on the VPS.
+The private key to paste into `VPS_SSH_KEY` is in `/tmp/harness_ci_key` on the dev machine (do not commit).
+
+## ISO Distribution
+- ISO hosted on VPS: `http://148.113.174.52:8899/harnessOS-YYYY.MM.DD-x86_64.iso`
+- Served by `harnessOS-downloads` nginx container (docker-compose at `/home/debian/harnessOS-downloads/`)
+- GitHub Releases has 2 GB limit — ISO (3 GB) goes to VPS; only `.sha256` checksum goes to GitHub Release asset

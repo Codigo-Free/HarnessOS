@@ -5,12 +5,13 @@ on:
     branches: [main]
     paths:
       - 'archiso/**'
-      - 'dotfiles/**'
-      - 'scripts/**'
       - 'installer/**'
+      - 'dotfiles/**'
   pull_request:
     paths:
       - 'archiso/**'
+      - 'installer/**'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,32 +22,41 @@ jobs:
       options: --privileged
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Update system and install archiso
-        run: |
-          pacman -Sy --noconfirm archiso mkinitcpio-archiso
+      - name: Install archiso
+        run: pacman -Sy --noconfirm archiso mkinitcpio-archiso
 
       - name: Validate profiledef.sh
         run: bash -n archiso/profiledef.sh
+
+      - name: Inject installer into airootfs
+        run: |
+          TARGET="archiso/airootfs/usr/local/lib/harness/installer"
+          rm -rf "$TARGET"
+          mkdir -p "$TARGET"
+          cp -r installer/harness_installer "$TARGET/"
+          cp    installer/requirements.txt   "$TARGET/"
+          echo "Installer injected into $TARGET"
 
       - name: Build ISO
         run: |
           mkdir -p out
           mkarchiso -v -w /tmp/harness-work -o ./out ./archiso
 
-      - name: Get ISO info
+      - name: Generate checksum
         run: |
           ISO=$(find out -name "*.iso" | head -1)
           echo "ISO_FILE=${ISO}" >> $GITHUB_ENV
+          echo "ISO_NAME=$(basename ${ISO})" >> $GITHUB_ENV
           echo "ISO_SIZE=$(du -sh ${ISO} | cut -f1)" >> $GITHUB_ENV
           sha256sum "${ISO}" > "${ISO}.sha256"
 
-      - name: Upload ISO artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: harnessOS-iso-${{ github.sha }}
+          name: harnessOS-${{ github.sha }}
           path: |
             out/*.iso
             out/*.sha256
@@ -54,9 +64,9 @@ jobs:
 
       - name: Build summary
         run: |
-          echo "## Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Build Results" >> $GITHUB_STEP_SUMMARY
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| ISO | \`${{ env.ISO_FILE }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| ISO | \`${{ env.ISO_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Size | ${{ env.ISO_SIZE }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
