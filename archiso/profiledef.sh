@@ -31,4 +31,5 @@ file_permissions=(
     ["/usr/local/share/harness/profiles/ml/setup.sh"]="0:0:755"
     ["/usr/local/share/harness/profiles/devops/setup.sh"]="0:0:755"
     ["/usr/local/share/harness/profiles/security/setup.sh"]="0:0:755"
+    ["/usr/local/bin/harness-easter-egg"]="0:0:755"
 )

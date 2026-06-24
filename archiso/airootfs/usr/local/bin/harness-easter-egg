@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# harness-easter-egg — secret Easter egg triggered by SUPER+CTRL+SHIFT+G
+#
+# Sequence:
+#   1. Show portrait fullscreen (if found at ~/.local/share/harness/easter-egg/)
+#   2. Launch Galaga
+
+PORTRAIT_DIR="$HOME/.local/share/harness/easter-egg"
+GALAGA="/usr/local/share/harness/easter-egg/galaga.py"
+
+# Find portrait — accepts jpg, png, jpeg, webp
+PORTRAIT=$(find "$PORTRAIT_DIR" -maxdepth 1 \( \
+    -iname "portrait.jpg"  -o \
+    -iname "portrait.png"  -o \
+    -iname "portrait.jpeg" -o \
+    -iname "portrait.webp" \
+\) 2>/dev/null | head -1)
+
+if [[ -n "$PORTRAIT" ]]; then
+    # -f fullscreen, -t 5 auto-close after 5 seconds
+    imv -f -t 5 "$PORTRAIT" 2>/dev/null || true
+fi
+
+exec python3 "$GALAGA"
