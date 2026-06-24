@@ -5,15 +5,98 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [2026.06.23] - 2026-06-23
+
+### Added
+
+**harness CLI — central command center**
+- `harness info` — displays hardware summary, kernel, running services, Ollama models
+- `harness doctor` — verifies GPU driver, Docker, Ollama, Claude CLI, Git, Node, pnpm, Python, Docker Compose; prints fix hints for failures
+- `harness setup` — post-install wizard: GitHub CLI auth, Claude CLI install, Ollama model pull
+- `harness update` — safe system update with automatic BTRFS snapshot before and after
+- `harness snapshot` — manual snapshot with `-m` message flag and `--list` to browse/restore
+- `harness install <profile>` — installs developer profiles (web, ml, devops, security)
+- `harness ai` — dispatches to `harness-ai` with forwarded arguments
+
+**harness ai — system-aware AI chat**
+- Injects live system context into every conversation: kernel, uptime, disk, memory, failed services, Docker containers, last 20 zsh commands
+- Streams responses token-by-token from Ollama (llama3.2 default, configurable)
+- Detects shell commands in responses, lists them numbered, requires approval before execution
+- Persists conversation history to `~/.local/share/harness/ai-sessions/`
+- `--explain <cmd>` flag to explain a command without executing it
+- `--model <name>` flag to override the default model
+- `--no-context` flag to disable system injection for privacy
+
+**Developer profiles**
+- `web` profile: Bun, extended TypeScript tools, Vercel CLI, Tailwind CSS CLI
+- `ml` profile: CUDA toolkit, cuDNN, PyTorch (CUDA), Jupyter, pandas, scikit-learn, transformers, huggingface-hub
+- `devops` profile: Terraform, Ansible, Helm, kubectx, kubens, AWS CLI v2
+- `security` profile: nmap, Wireshark, hashcat, John the Ripper, sqlmap, gobuster, Nikto, Metasploit
+
+**TUI installer (Python + textual)**
+- 7-screen guided installer: Welcome, Disk Setup, User Setup, GPU Detection, Software Profile, Confirm, Progress
+- Welcome screen shows detected CPU, RAM, GPU
+- Disk screen lists available disks with size, creates BTRFS layout automatically
+- BTRFS subvolumes: @, @home, @var, @var_log, @snapshots, @swap (with `chattr +C` NoCoW on @swap)
+- GPU screen auto-detects NVIDIA/AMD/Intel and installs correct drivers
+- NVIDIA always uses `nvidia-dkms` for linux-zen compatibility + runs `mkinitcpio -p linux-zen`
+- Progress screen streams live output from pacstrap and arch-chroot steps
+- Deploys dotfiles from live harness user to installed user home
+- Installs systemd-boot with correct entry for linux-zen
+
+**Waybar enhancements**
+- Ollama status widget: shows active model in green, idle in amber, offline in gray
+- Click Ollama widget to open `harness ai` in Kitty terminal
+- Volume widget with pulsemixer integration
+
+**Hyprland keybindings**
+- `SUPER+A` → `harness ai` (system-aware AI assistant)
+- `SUPER+C` → Claude CLI
+- `SUPER+O` → Ollama raw chat
+
+**GitHub Actions CI/CD**
+- `build-iso.yml` — builds ISO on push to archiso/**, installer/**, or dotfiles/**; uploads artifact (7-day retention)
+- `release.yml` — triggered by `v*` tags; builds ISO, uploads to VPS, creates GitHub Release with SHA256 checksum and VPS download link
+- Both workflows inject installer into airootfs before mkarchiso (critical step)
+- Uses `archlinux:latest` container with `--privileged` (not ubuntu runners)
+
+**Dotfiles deployment**
+- `dotfiles.py` copies live harness user configs to installed user home
+- Fixes ownership via arch-chroot + chown
+- Deployed configs: Hyprland, Waybar, Kitty, Wofi, .zshrc, .zprofile
+
+### Changed
+- `harness-install` launcher now uses `python3 -m harness_installer.main` (fixes module import)
+- NVIDIA installer runs `mkinitcpio -p linux-zen` after patching mkinitcpio.conf
+
+### Technical
+- Build system: `./scripts/build-docker.sh` — Docker (`archlinux:latest`) on non-Arch hosts
+- Kernel: linux-zen (lower desktop latency vs mainline)
+- Filesystem: BTRFS with zstd compression, noatime, space_cache=v2
+- Bootloader: systemd-boot
+- Network manager: NetworkManager + nmtui
+- Shell: zsh + Starship prompt + zoxide + eza + bat
+
+---
+
+## [2026.06.21] - 2026-06-21
+
 ### Added
 - Initial archiso profile with linux-zen kernel
+- Hyprland + Waybar (horizontal) + Kitty + Wofi — Tokyo Night theme
+- Wallpaper with HarnessOS logo (swaybg)
 - Full AI dev stack: Claude CLI, Ollama, GitHub Copilot
-- Languages: Python 3, Node.js LTS, .NET SDK, Java (OpenJDK), PHP
-- Frontend tools: npm, pnpm, TypeScript, ts-node
-- Hyprland + Waybar + Kitty + Wofi (Tokyo Night theme)
+- Languages: Python 3, Node.js LTS, .NET SDK, OpenJDK + Maven, PHP + Composer
+- TUI tools: lazygit, lazydocker, yazi, zoxide, bottom, lnav, k9s
+- Shell aliases: ls→eza, cat→bat, vim→nvim, d→docker, lg→lazygit, y→yazi
+- Docker + Compose + nvidia-container-runtime
 - BTRFS filesystem with snapper timeline snapshots
-- TUI installer (Python + textual)
-- NVIDIA GPU auto-detection and driver installation
-- Docker with nvidia-container-runtime support
-- GNU Stow dotfile management
-- GitHub Actions CI/CD: build ISO on push, publish on tag
+- `harness-detect-gpu` — GPU detection library (conditionally sets NVIDIA Wayland env vars)
+- `harness-power` — power menu (shutdown / reboot / suspend)
+- `harness-welcome` — first-boot welcome message
+- `harness-online-setup.service` — installs npm globals on first internet connection
+- GNU Stow dotfile management structure
+- UEFI-only boot (GRUB-less, systemd-boot)
+
+[2026.06.23]: https://github.com/Codigo-Free/HarnessOS/releases/tag/v2026.06.23
+[2026.06.21]: https://github.com/Codigo-Free/HarnessOS/releases/tag/v2026.06.21
