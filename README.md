@@ -12,12 +12,32 @@
 
 ## What ships out of the box
 
+### `harness` — Command center
+
+The `harness` CLI is the single interface to everything in HarnessOS:
+
+```bash
+harness info                  # CPU, RAM, GPU, kernel, services, Ollama models
+harness doctor                # Verify all tools are working (✓/✗ each component)
+harness setup                 # Post-install wizard: GitHub, Claude, Ollama model
+harness update                # Safe system update — BTRFS snapshot before & after
+harness snapshot -m "before big refactor"  # Manual snapshot
+harness snapshot --list       # Show all snapshots
+harness install web           # Install Web Dev profile (pnpm, Bun, Vercel, Tailwind)
+harness install ml            # Install ML profile (CUDA, PyTorch, Jupyter)
+harness install devops        # Install DevOps profile (Terraform, Ansible, Helm)
+harness install security      # Install Security profile (nmap, wireshark, hashcat)
+harness ai                    # System-aware AI chat powered by Ollama
+harness ai --explain "cmd"    # Explain a shell command in context
+```
+
 ### AI Tools
 | Tool | Command | Purpose |
 |------|---------|---------|
+| **harness ai** | `harness ai` | System-aware local AI chat (sees your kernel, services, docker, history) |
 | **Claude CLI** | `claude` | AI pair programmer (Anthropic) |
 | **Ollama** | `ollama` | Run LLMs locally (llama3.2, mistral, etc.) |
-| **GitHub Copilot** | `gh copilot` | Copilot CLI + Neovim plugin |
+| **GitHub Copilot** | `gh copilot` | Copilot CLI |
 
 ### Desktop
 | Tool | Purpose |
@@ -59,31 +79,43 @@
 ## Quick Install
 
 ```bash
-# 1. Download the latest ISO from Releases
+# 1. Download the latest ISO
 # 2. Flash to USB
 sudo dd if=harnessOS-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
 
-# 3. Boot from USB, then:
+# 3. Boot from USB → run installer
 harness-install
+
+# 4. After reboot — run setup wizard
+harness setup
+
+# 5. Verify everything works
+harness doctor
 ```
 
-The installer guides you through disk selection, user setup, and GPU driver configuration (NVIDIA/CUDA auto-detected).
+The TUI installer auto-detects your GPU, configures BTRFS with snapshots, copies all dotfiles, and installs bootloader. Takes ~10 minutes.
 
 ---
 
 ## AI Tools — First Run
 
 ```bash
-# Claude CLI — set your API key
-claude auth login
+# Guided setup wizard (handles all of the below)
+harness setup
 
-# Ollama — pull your first model
-ollama pull llama3.2
-ollama run llama3.2
+# Or manually:
+claude auth login             # Authenticate Claude CLI
+ollama pull llama3.2          # Download local model (~2 GB)
+gh auth login                 # GitHub CLI auth
 
-# GitHub Copilot CLI
-gh auth login
-gh copilot suggest "write a docker-compose for postgres"
+# System-aware AI chat — the AI knows your system state
+harness ai
+# > "why is docker failing?"  ← AI already sees your services
+# > "explain what happened in my last 5 commands"
+# > "how do I optimize this container?"
+
+# Explain any command before running it
+harness ai --explain "docker rm -f \$(docker ps -aq)"
 ```
 
 ---
@@ -96,8 +128,9 @@ gh copilot suggest "write a docker-compose for postgres"
 | `Super + R` | App launcher (Wofi) |
 | `Super + B` | Firefox |
 | `Super + E` | VS Code |
+| `Super + A` | HarnessOS AI assistant (`harness ai`) |
 | `Super + C` | Claude CLI in terminal |
-| `Super + O` | Ollama (llama3.2) in terminal |
+| `Super + O` | Ollama raw chat in terminal |
 | `Super + H/J/K/L` | Focus window (vim-style) |
 | `Super + 1–4` | Switch workspace |
 | `Super + Shift + 1–4` | Move window to workspace |

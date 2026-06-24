@@ -2,6 +2,75 @@
 
 HarnessOS ships with a curated set of AI coding tools pre-configured and ready to use.
 
+## harness ai — System-aware AI assistant
+
+`harness ai` is HarnessOS's built-in AI chat powered by Ollama. Unlike running `ollama run` directly, `harness ai` injects live system context into every conversation — the AI knows your machine before you type a single word.
+
+**Launch:**
+```bash
+harness ai              # Interactive chat
+harness ai -m llama3.2  # Specify model
+harness ai --explain "sudo rm -rf /var/cache/pacman/pkg"   # Explain a command
+# or from Hyprland: SUPER + A
+```
+
+**What the AI sees at startup:**
+```
+OS      : HarnessOS (Arch Linux)
+Kernel  : 7.0.12-zen1-1-zen
+Uptime  : up 2 hours, 14 minutes
+GPU     : NVIDIA RTX 3080, driver 550.x
+
+Memory  : 15Gi total, 4.2Gi used
+
+Disk    :
+  /        used 24G  avail 180G  (12%)
+  /home    used 8G   avail 196G  (4%)
+
+Failed services: (none)
+
+Running Docker containers:
+  postgres-dev (postgres:16)
+  redis-cache  (redis:7)
+
+Recent shell commands (last 20):
+  docker compose up -d
+  git push origin main
+  npm run dev
+  ...
+```
+
+**Example session:**
+```
+you › why is my node dev server crashing?
+AI  › Looking at your recent commands, you ran `npm run dev` after `docker compose up -d`.
+      Your docker-compose likely exposes port 3000, which conflicts with your dev server.
+      Try:
+      ```bash
+      lsof -i :3000
+      docker compose down
+      npm run dev
+      ```
+
+Run command [1] lsof -i :3000? [y/n] y
+$ lsof -i :3000
+COMMAND  PID   USER   ...
+node    1234  harness ...
+```
+
+**Command execution:** When the AI suggests shell commands in ` ```bash ``` ` blocks, `harness ai` offers to run them one by one. You approve each before execution — the AI never runs anything without your confirmation.
+
+**Session persistence:** Conversations are saved to `~/.local/share/harness/ai-sessions/TIMESTAMP.json` automatically.
+
+**Model configuration:** Set your preferred model in `~/.config/harness/config.toml`:
+```toml
+model = "llama3.2"
+```
+
+**Waybar widget:** The top bar shows the active Ollama model name in green when running. Click it to open `harness ai`.
+
+---
+
 ## Claude CLI
 
 Claude Code is Anthropic's official CLI for the Claude AI assistant. It provides an interactive terminal interface for AI-assisted coding.

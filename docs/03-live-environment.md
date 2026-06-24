@@ -27,8 +27,9 @@ The HarnessOS ISO boots directly into a fully functional live environment withou
 | `SUPER + B` | Open Firefox |
 | `SUPER + E` | Open VS Code |
 | `SUPER + R` | App launcher (Wofi) |
-| `SUPER + C` | Claude AI in terminal |
-| `SUPER + O` | Ollama (llama3.2) in terminal |
+| `SUPER + A` | HarnessOS AI assistant (system-aware `harness ai`) |
+| `SUPER + C` | Claude CLI in terminal |
+| `SUPER + O` | Ollama raw chat in terminal |
 | `SUPER + W` | Close focused window |
 | `SUPER + F` | Toggle fullscreen |
 | `SUPER + Space` | Toggle floating |
@@ -49,7 +50,13 @@ The horizontal bar at the top contains:
 - **⬡ HarnessOS** — click to open app launcher (Wofi)
 - **Workspace indicators 1–4** — always visible, click to switch (or `SUPER+1–4`)
 
+**Center:**
+- **Clock** — current time and date (`HH:MM  DD Mon YYYY`), click for full date
+
 **Right side:**
+- **Volume** — current level, click to open pulsemixer, right-click to mute
+- **Ollama status** — shows active model name (`● llama3.2`) in green, or `○ offline` in gray. Click to open `harness ai`
+- **Network** — WiFi name or LAN, click to open `nmtui`
 - **Firefox** icon — open browser
 - **Terminal** icon — open Kitty
 - **VS Code** icon — open editor

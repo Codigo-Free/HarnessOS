@@ -72,10 +72,36 @@ Real-time log of `pacstrap`, chroot configuration, bootloader install, and dotfi
 
 After reboot into the installed system:
 
-1. Connect to the internet — `harness-online-setup` will run automatically and install Claude CLI, pnpm, TypeScript tools.
-2. Authenticate Claude: `claude` — follow the login prompt.
-3. Pull an Ollama model: `ollama pull llama3.2`
-4. Open VS Code: `code .`
+```bash
+# 1. Run the setup wizard (handles auth, models, and verification)
+harness setup
+
+# 2. Verify everything is working
+harness doctor
+
+# 3. Start coding
+harness ai          # Ask the AI about your system
+claude              # Pair programming with Claude
+code .              # Open VS Code
+```
+
+`harness setup` will:
+- Authenticate GitHub CLI if not already logged in
+- Install Claude CLI if missing (requires internet)
+- Prompt to pull `llama3.2` model for Ollama if no model is found
+
+`harness doctor` checks: GPU driver, Docker, Ollama, Claude CLI, Git, Node.js, pnpm, Python, Docker Compose — and prints fix hints for anything missing.
+
+### Installing developer profiles
+
+After setup, install additional tool profiles as needed:
+
+```bash
+sudo harness install web      # pnpm, Bun, TypeScript, Vercel, Next.js, Tailwind
+sudo harness install ml       # CUDA, PyTorch, Jupyter, pandas, transformers
+sudo harness install devops   # Terraform, Ansible, Helm, kubectx, AWS CLI
+sudo harness install security # nmap, wireshark, hashcat, sqlmap
+```
 
 ## Bootloader
 
