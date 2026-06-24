@@ -1,3 +1,12 @@
 #!/usr/bin/env bash
-# harness-easter-egg — activated by SUPER+CTRL+SHIFT+G
+# harness-easter-egg — activated by SUPER+SHIFT+CTRL+G
+
+# Wayland display — inherit from Hyprland or detect
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+# Force pygame to use Wayland via SDL2
+export SDL_VIDEODRIVER=wayland
+export SDL_AUDIODRIVER=pipewire
+
 exec python3 /usr/local/share/harness/easter-egg/galaga.py
