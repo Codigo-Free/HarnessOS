@@ -14,10 +14,7 @@ Boot into a complete AI development environment in minutes. Claude CLI, Ollama, 
 ## Screenshots
 
 ![HarnessOS Wallpaper](docs/screenshots/wallpaper.jpg)
-*HarnessOS — clean logo on first workspace*
-
-![HarnessOS Desktop](docs/screenshots/desktop.png)
-*Desktop — Waybar, Tokyo Night theme, multi-workspace layout*
+*HarnessOS — desktop with Waybar and logo wallpaper*
 
 ![harness ai in action](docs/screenshots/harness-ai.png)
 *`harness ai` — pulls llama3.2 on first run and starts a context-aware AI session*
