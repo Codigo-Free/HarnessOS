@@ -41,6 +41,9 @@ Thumbs.db
 # Easter egg source photo (baked copy lives in airootfs/)
 foto.png
 
+# Raw screenshot sources at repo root (copies go to docs/screenshots/)
+Captura*.png
+
 # Pacman repo database (generated)
 packages/repo/*.db*
 packages/repo/*.files*

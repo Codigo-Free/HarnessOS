@@ -14,16 +14,13 @@ Boot into a complete AI development environment in minutes. Claude CLI, Ollama, 
 ## Screenshots
 
 ![HarnessOS Desktop](docs/screenshots/desktop.png)
-*Desktop with Waybar, Tokyo Night theme, and Ollama status widget*
+*Desktop — Waybar, Tokyo Night theme, HarnessOS logo wallpaper*
 
 ![harness ai in action](docs/screenshots/harness-ai.png)
-*`harness ai` — the AI sees your running services, disk state, and shell history*
+*`harness ai` — pulls llama3.2 on first run and starts a context-aware AI session*
 
-![TUI Installer](docs/screenshots/installer.png)
-*7-screen TUI installer handles partitioning, GPU detection, and dotfile deployment*
-
-> **No screenshots yet?** Boot the live USB and run `wf-recorder` to capture your own.
-> See [docs/screenshots/](docs/screenshots/) for guidance.
+![HarnessOS split view](docs/screenshots/desktop-split.png)
+*Split view — `harness ai` terminal alongside Firefox, all running in Hyprland*
 
 ---
 
