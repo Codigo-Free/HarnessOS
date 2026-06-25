@@ -62,11 +62,20 @@ class ProgressScreen(Screen):
         threading.Thread(target=self._run_install, daemon=True).start()
 
     def _log(self, msg: str) -> None:
-        self.call_from_thread(self.query_one("#install-log", Log).write_line, msg)
+        with open("/tmp/harness-install.log", "a") as f:
+            f.write(msg + "\n")
+
+        def _write():
+            self.query_one("#install-log", Log).write_line(msg)
+        self.app.call_from_thread(_write)
 
     def _set_step(self, step: str, n: int) -> None:
-        self.call_from_thread(self.query_one("#step-label", Static).update, f"Step {n}/{len(STEPS)}: {step}")
-        self.call_from_thread(self.query_one("#progress", ProgressBar).advance, 1)
+        label = f"Step {n}/{len(STEPS)}: {step}"
+
+        def _update():
+            self.query_one("#step-label", Static).update(label)
+            self.query_one("#progress", ProgressBar).advance(1)
+        self.app.call_from_thread(_update)
 
     def _run_install(self) -> None:
         cfg = self.app.config
