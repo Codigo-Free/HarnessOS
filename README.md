@@ -13,14 +13,23 @@ Boot into a complete AI development environment in minutes. Claude CLI, Ollama, 
 
 ## Screenshots
 
+![HarnessOS Wallpaper](docs/screenshots/wallpaper.jpg)
+*HarnessOS — clean logo on first workspace*
+
 ![HarnessOS Desktop](docs/screenshots/desktop.png)
-*Desktop — Waybar, Tokyo Night theme, HarnessOS logo wallpaper*
+*Desktop — Waybar, Tokyo Night theme, multi-workspace layout*
 
 ![harness ai in action](docs/screenshots/harness-ai.png)
 *`harness ai` — pulls llama3.2 on first run and starts a context-aware AI session*
 
+![harness ai split](docs/screenshots/harness-ai-split.jpg)
+*`harness ai` split pane — two concurrent AI conversations running side by side*
+
 ![HarnessOS split view](docs/screenshots/desktop-split.png)
-*Split view — `harness ai` terminal alongside Firefox, all running in Hyprland*
+*Split view — terminal alongside Firefox, all running in Hyprland*
+
+![Easter egg](docs/screenshots/easter-egg.jpg)
+*`SUPER+SHIFT+CTRL+G` — hidden Galaga game (Tokyo Night palette)*
 
 ---
 

@@ -44,6 +44,9 @@ foto.png
 # Raw screenshot sources at repo root (copies go to docs/screenshots/)
 Captura*.png
 
+# Raw WhatsApp photos (curated copies go to docs/screenshots/)
+img/
+
 # Pacman repo database (generated)
 packages/repo/*.db*
 packages/repo/*.files*
