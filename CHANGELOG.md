@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [2026.06.24] - 2026-06-24
+
+### Added
+- Easter egg: `SUPER+SHIFT+CTRL+G` → 3 white flashes → portrait fullscreen → Galaga game
+- Galaga: full pygame clone (Tokyo Night palette), 4 enemy types, swooping, waves, explosions
+- kanshi: multi-monitor profile manager — 5 profiles (laptop-only, dual-right, dual-dp-right, external-only, mirror)
+- wlr-randr: CLI tool for querying and setting display outputs
+- kanshi auto-starts on Hyprland login
+
+### Fixed
+- Easter egg keybind: corrected Hyprland modifier order (`$mod SHIFT CTRL` vs `$mod CTRL SHIFT`)
+- Easter egg script: `SDL_VIDEODRIVER=wayland` now conditional on `WAYLAND_DISPLAY` presence (works on both X11 and Wayland)
+
 ## [2026.06.23] - 2026-06-23
 
 ### Added
@@ -98,5 +111,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - GNU Stow dotfile management structure
 - UEFI-only boot (GRUB-less, systemd-boot)
 
+[2026.06.24]: https://github.com/Codigo-Free/HarnessOS/releases/tag/v2026.06.24
 [2026.06.23]: https://github.com/Codigo-Free/HarnessOS/releases/tag/v2026.06.23
 [2026.06.21]: https://github.com/Codigo-Free/HarnessOS/releases/tag/v2026.06.21

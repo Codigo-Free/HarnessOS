@@ -50,18 +50,18 @@ You spend days setting up a new machine. Installing packages, configuring dotfil
 
 | Version | Date | Size | Link |
 |---------|------|------|------|
-| **v2026.06.23** (latest) | 2026-06-23 | 3.0 GB | [harnessOS-2026.06.23-x86_64.iso](http://148.113.174.52:8899/harnessOS-2026.06.23-x86_64.iso) |
+| **v2026.06.24** (latest) | 2026-06-24 | 3.0 GB | [harnessOS-2026.06.24-x86_64.iso](http://148.113.174.52:8899/harnessOS-2026.06.24-x86_64.iso) |
 
 ```bash
 # Download
-wget http://148.113.174.52:8899/harnessOS-2026.06.23-x86_64.iso
+wget http://148.113.174.52:8899/harnessOS-2026.06.24-x86_64.iso
 
 # Verify checksum
-wget http://148.113.174.52:8899/harnessOS-2026.06.23-x86_64.iso.sha256
-sha256sum -c harnessOS-2026.06.23-x86_64.iso.sha256
+wget http://148.113.174.52:8899/harnessOS-2026.06.24-x86_64.iso.sha256
+sha256sum -c harnessOS-2026.06.24-x86_64.iso.sha256
 
 # Flash to USB
-sudo dd if=harnessOS-2026.06.23-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
+sudo dd if=harnessOS-2026.06.24-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
 ```
 
 > The ISO boots straight to Hyprland. Run `harness-install` from the terminal to install to disk.
