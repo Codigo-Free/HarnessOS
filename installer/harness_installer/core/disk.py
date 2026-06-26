@@ -110,7 +110,7 @@ def create_swapfile(mountpoint: str, size_gb: int = 4) -> None:
 
 
 def mount_efi(efi_part: str, mountpoint: str = "/mnt") -> None:
-    efi_dir = Path(mountpoint) / "boot" / "efi"
+    efi_dir = Path(mountpoint) / "boot"
     efi_dir.mkdir(parents=True, exist_ok=True)
     _run(["mount", efi_part, str(efi_dir)])
 

@@ -6,12 +6,12 @@ from pathlib import Path
 def install_bootloader(mountpoint: str, root_part: str, nvidia: bool = False) -> None:
     """Install systemd-boot and create boot entries."""
     subprocess.run(
-        ["arch-chroot", mountpoint, "bootctl", "--path=/boot/efi", "install"],
+        ["arch-chroot", mountpoint, "bootctl", "--path=/boot", "install"],
         check=True,
     )
 
     mp = Path(mountpoint)
-    loader_dir = mp / "boot" / "efi" / "loader"
+    loader_dir = mp / "boot" / "loader"
     entries_dir = loader_dir / "entries"
     entries_dir.mkdir(parents=True, exist_ok=True)
 

@@ -8,7 +8,7 @@ exec > >(tee -a "$LOG") 2>&1
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; YELLOW='\033[1;33m'; RST='\033[0m'; BOLD='\033[1m'
 
-die()  { echo -e "${RED}✗ $*${RST}"; exit 1; }
+die()  { echo -e "${RED}✗ $*${RST}" >&2; exit 1; }
 ok()   { echo -e "${GREEN}✓ $*${RST}"; }
 info() { echo -e "${CYAN}▶ $*${RST}"; }
 warn() { echo -e "${YELLOW}⚠ $*${RST}"; }
@@ -26,6 +26,39 @@ echo ""
 
 [[ $EUID -ne 0 ]] && die "Run as root: sudo bash install-cli.sh"
 ping -c1 -W3 archlinux.org &>/dev/null || die "No internet. Connect with: nmtui"
+
+# ── Preflight helpers ─────────────────────────────────────────────────────────
+
+ensure_mirrors() {
+    info "Checking pacman mirrors ..."
+    if ! grep -q "^Server" /etc/pacman.d/mirrorlist 2>/dev/null; then
+        warn "No mirrors found — writing defaults"
+        cat > /etc/pacman.d/mirrorlist <<'EOF'
+Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch
+Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch
+Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch
+EOF
+    fi
+    pacman -Syy --noconfirm || die "pacman -Syy failed — check network and mirrors"
+    ok "Mirrors ready"
+}
+
+init_keyring() {
+    info "Initializing pacman keyring ..."
+    rm -rf /etc/pacman.d/gnupg
+    pacman-key --init
+    pacman-key --populate archlinux
+    ok "Keyring initialized"
+}
+
+wait_for_device() {
+    local dev=$1
+    for i in {1..10}; do
+        [[ -b "$dev" ]] && return 0
+        sleep 1
+    done
+    die "Device not ready after 10s: $dev"
+}
 
 # ── Collect install parameters ────────────────────────────────────────────────
 
@@ -69,6 +102,11 @@ read -rp "Proceed? [yes/no]: " GO
 
 MP="/mnt"
 
+# ── Preflight ─────────────────────────────────────────────────────────────────
+info "Step 0/13 — Preflight checks ..."
+ensure_mirrors
+init_keyring
+
 # ── 1. Partition ──────────────────────────────────────────────────────────────
 info "Step 1/13 — Partitioning $DISK ..."
 wipefs -af "$DISK"
@@ -76,13 +114,15 @@ sgdisk "$DISK" \
     -n 1:0:+512M -t 1:ef00 -c 1:EFI \
     -n 2:0:0     -t 2:8300 -c 2:ROOT
 partprobe "$DISK"
-sleep 2
 
 if [[ "$DISK" == *nvme* ]]; then
     EFI="${DISK}p1"; ROOT="${DISK}p2"
 else
     EFI="${DISK}1";  ROOT="${DISK}2"
 fi
+
+wait_for_device "$EFI"
+wait_for_device "$ROOT"
 ok "Partitioned: EFI=$EFI  ROOT=$ROOT"
 
 # ── 2. Format ─────────────────────────────────────────────────────────────────
@@ -93,22 +133,29 @@ ok "Formatted"
 
 # ── 3. BTRFS subvolumes ───────────────────────────────────────────────────────
 info "Step 3/13 — Creating BTRFS subvolumes ..."
-mount "$ROOT" "$MP"
+mount -t btrfs "$ROOT" "$MP" || die "Failed to mount BTRFS root"
 for sv in @ @home @var @var_log @snapshots @swap; do
     btrfs subvolume create "$MP/$sv"
 done
 umount "$MP"
 
+# Validate all subvolumes were created
+mount -t btrfs "$ROOT" "$MP"
+for sv in @ @home @var @var_log @snapshots @swap; do
+    btrfs subvolume list "$MP" | grep -q " $sv$" || die "Missing subvolume: $sv"
+done
+umount "$MP"
+
 OPTS="noatime,compress=zstd:1,space_cache=v2"
-mount -o "${OPTS},subvol=@"          "$ROOT" "$MP"
-mkdir -p "$MP"/{home,var,var/log,.snapshots,swap,boot/efi}
-mount -o "${OPTS},subvol=@home"      "$ROOT" "$MP/home"
-mount -o "${OPTS},subvol=@var"       "$ROOT" "$MP/var"
-mount -o "${OPTS},subvol=@var_log"   "$ROOT" "$MP/var/log"
-mount -o "${OPTS},subvol=@snapshots" "$ROOT" "$MP/.snapshots"
-mount -o "${OPTS},subvol=@swap"      "$ROOT" "$MP/swap"
+mount -o "${OPTS},subvol=@" -t btrfs "$ROOT" "$MP" || die "Failed to mount @ subvolume"
+mkdir -p "$MP"/{home,var,var/log,.snapshots,swap,boot}
+mount -o "${OPTS},subvol=@home"      -t btrfs "$ROOT" "$MP/home"
+mount -o "${OPTS},subvol=@var"       -t btrfs "$ROOT" "$MP/var"
+mount -o "${OPTS},subvol=@var_log"   -t btrfs "$ROOT" "$MP/var/log"
+mount -o "${OPTS},subvol=@snapshots" -t btrfs "$ROOT" "$MP/.snapshots"
+mount -o "${OPTS},subvol=@swap"      -t btrfs "$ROOT" "$MP/swap"
 chattr +C "$MP/swap"
-mount "$EFI" "$MP/boot/efi"
+mount "$EFI" "$MP/boot"
 ok "Subvolumes mounted"
 
 # ── 4. Swapfile ───────────────────────────────────────────────────────────────
@@ -132,7 +179,12 @@ pacstrap -K "$MP" \
     pipewire pipewire-alsa pipewire-pulse wireplumber \
     ttf-jetbrains-mono-nerd ttf-font-awesome \
     stow fzf ripgrep fd bat eza zoxide lazygit yazi bottom lnav \
-    kanshi wlr-randr python-textual python-pygame imv
+    kanshi wlr-randr python-textual python-pygame imv || {
+        warn "pacstrap failed — dumping mirror and pacman state"
+        cat /etc/pacman.d/mirrorlist
+        pacman -Syy --noconfirm
+        die "pacstrap failed — see log: $LOG"
+    }
 ok "Base system installed"
 
 # ── 6. fstab ─────────────────────────────────────────────────────────────────
@@ -173,7 +225,8 @@ if [[ "$INSTALL_NVIDIA" == "true" ]]; then
         libva-nvidia-driver
     sed -i 's/^MODULES=()/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' \
         "$MP/etc/mkinitcpio.conf"
-    arch-chroot "$MP" mkinitcpio -p linux-zen
+    arch-chroot "$MP" mkinitcpio -p linux-zen || die "mkinitcpio failed — check $LOG"
+    [[ -f "$MP/boot/initramfs-linux-zen.img" ]] || die "initramfs-linux-zen.img not generated"
     ok "NVIDIA drivers installed"
 else
     ok "No proprietary GPU driver needed"
@@ -188,19 +241,35 @@ ok "Services enabled"
 
 # ── 11. Bootloader ───────────────────────────────────────────────────────────
 info "Step 11/13 — Installing systemd-boot ..."
-arch-chroot "$MP" bootctl install
+arch-chroot "$MP" bootctl --path=/boot install
 ROOT_UUID=$(blkid -s UUID -o value "$ROOT")
+
+# Ensure loader directories exist even if bootctl had partial failure
+mkdir -p "$MP/boot/loader/entries"
+
 cat > "$MP/boot/loader/entries/harnessOS.conf" <<EOF
 title   HarnessOS (linux-zen)
 linux   /vmlinuz-linux-zen
 initrd  /initramfs-linux-zen.img
 options root=UUID=${ROOT_UUID} rootflags=subvol=@ rw quiet splash
 EOF
+
+cat > "$MP/boot/loader/entries/harnessOS-fallback.conf" <<EOF
+title   HarnessOS (linux-zen, fallback)
+linux   /vmlinuz-linux-zen
+initrd  /initramfs-linux-zen-fallback.img
+options root=UUID=${ROOT_UUID} rootflags=subvol=@ rw
+EOF
+
 cat > "$MP/boot/loader/loader.conf" <<EOF
 default harnessOS.conf
 timeout 3
 console-mode auto
+editor  no
 EOF
+
+[[ -f "$MP/boot/vmlinuz-linux-zen" ]]        || die "vmlinuz-linux-zen not found on ESP"
+[[ -f "$MP/boot/initramfs-linux-zen.img" ]]  || die "initramfs-linux-zen.img not found on ESP"
 ok "Bootloader installed"
 
 # ── 12. Snapper ──────────────────────────────────────────────────────────────
