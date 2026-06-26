@@ -53,11 +53,11 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/ci_key
           chmod 600 ~/.ssh/ci_key
-          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
           # Remove old ISOs and upload the new one
-          ssh -i ~/.ssh/ci_key "$VPS_USER@$VPS_HOST" \
+          ssh -i ~/.ssh/ci_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" \
             "rm -f /var/www/html/harnessOS/*.iso && echo 'old ISOs removed'"
-          scp -i ~/.ssh/ci_key \
+          scp -i ~/.ssh/ci_key -o StrictHostKeyChecking=no \
             out/${{ env.ISO_NAME }} \
             "$VPS_USER@$VPS_HOST:/var/www/html/harnessOS/"
           echo "Upload complete"
