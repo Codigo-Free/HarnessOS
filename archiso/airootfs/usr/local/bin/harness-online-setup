@@ -36,6 +36,9 @@ npm install -g pnpm
 echo ">>> Installing TypeScript tools..."
 npm install -g typescript ts-node tsx
 
+echo ">>> Installing OpenCode (AI coding agent)..."
+npm install -g opencode-ai
+
 # ---------------------------------------------------------------------------
 # GitHub Copilot extension (requires gh to be present)
 # ---------------------------------------------------------------------------
