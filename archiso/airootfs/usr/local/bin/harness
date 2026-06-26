@@ -199,10 +199,14 @@ def cmd_update(_args) -> None:
 
 def cmd_ai(args) -> None:
     ai_args = ["harness-ai"]
-    if args.model:
+    if getattr(args, "mode", None) and args.mode != "default":
+        ai_args += [args.mode]
+    if getattr(args, "model", None):
         ai_args += ["-m", args.model]
     if getattr(args, "explain", None):
         ai_args += ["-e", args.explain]
+    if getattr(args, "file", None):
+        ai_args += ["-f", args.file]
     os.execvp("harness-ai", ai_args)
 
 # ── install ───────────────────────────────────────────────────────────────────
@@ -306,9 +310,13 @@ Commands:
     p_inst = sub.add_parser("install", help="Install a developer profile")
     p_inst.add_argument("profile", help="Profile name: web, ml, devops, security")
 
-    p_ai = sub.add_parser("ai", help="Chat with local AI")
-    p_ai.add_argument("-m", "--model",   default=None,  help="Ollama model name")
+    p_ai = sub.add_parser("ai", help="Chat with local AI (modes: code, doctor, explain, commit, logs)")
+    p_ai.add_argument("mode",    nargs="?", default="default",
+                      choices=["default","code","doctor","explain","commit","logs"],
+                      help="AI mode")
+    p_ai.add_argument("-m", "--model",   default=None,  help="Override Ollama model")
     p_ai.add_argument("-e", "--explain", metavar="CMD", help="Explain a command and exit")
+    p_ai.add_argument("-f", "--file",    metavar="LOG", help="Log file to analyze (logs mode)")
 
     args = p.parse_args()
 

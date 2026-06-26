@@ -23,23 +23,74 @@ BOLD = "\033[1m"
 DIM  = "\033[2m"
 RST  = "\033[0m"
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
+OLLAMA_URL   = "http://localhost:11434/api/chat"
 SESSIONS_DIR = Path.home() / ".local" / "share" / "harness" / "ai-sessions"
 CONFIG_FILE  = Path.home() / ".config" / "harness" / "config.toml"
-DEFAULT_MODEL = "llama3.2"
+
+# ── Model routing ─────────────────────────────────────────────────────────────
+#
+# Each mode has a default small model (fast, works on most hardware) and a
+# recommended upgrade model (better quality, needs more VRAM).
+# Override any model in ~/.config/harness/config.toml under [models].
+
+MODE_DEFAULTS: dict[str, str] = {
+    "default": "llama3.2",
+    "code":    "qwen2.5-coder:7b",
+    "doctor":  "deepseek-r1:7b",
+    "explain": "llama3.2",
+    "commit":  "qwen2.5-coder:7b",
+    "logs":    "deepseek-r1:7b",
+}
+
+MODE_UPGRADES: dict[str, str] = {
+    "default": "llama3.2",
+    "code":    "qwen3:27b",
+    "doctor":  "deepseek-r1:14b",
+    "explain": "gemma3:12b",
+    "commit":  "qwen3:27b",
+    "logs":    "deepseek-r1:14b",
+}
+
+MODE_LABELS: dict[str, str] = {
+    "code":    "Coding Agent",
+    "doctor":  "Diagnostics & Reasoning",
+    "explain": "System Assistant",
+    "commit":  "Commit Message Generator",
+    "logs":    "Log Analyzer",
+}
 
 # ── config ────────────────────────────────────────────────────────────────────
 
-def _load_model() -> str:
-    """Read model from ~/.config/harness/config.toml if it exists."""
-    if CONFIG_FILE.exists():
-        for line in CONFIG_FILE.read_text().splitlines():
-            line = line.strip()
-            if line.startswith("model") and "=" in line:
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
-    return DEFAULT_MODEL
+def _load_config() -> dict[str, str]:
+    """Read [models] section from ~/.config/harness/config.toml."""
+    result: dict[str, str] = {}
+    if not CONFIG_FILE.exists():
+        return result
+    in_models = False
+    for line in CONFIG_FILE.read_text().splitlines():
+        line = line.strip()
+        if line == "[models]":
+            in_models = True
+            continue
+        if line.startswith("["):
+            in_models = False
+        if in_models and "=" in line:
+            key, val = line.split("=", 1)
+            result[key.strip()] = val.strip().strip('"').strip("'")
+    return result
 
-# ── system context ─────────────────────────────────────────────────────────────
+
+def _resolve_model(mode: str, explicit: str | None, config: dict[str, str]) -> str:
+    """Return the model to use for a given mode."""
+    if explicit:
+        return explicit
+    # Check user config first
+    key = mode if mode != "default" else "default"
+    if key in config:
+        return config[key]
+    return MODE_DEFAULTS.get(mode, MODE_DEFAULTS["default"])
+
+# ── system context ────────────────────────────────────────────────────────────
 
 def _run(cmd: list[str], timeout: int = 3) -> str:
     try:
@@ -48,25 +99,24 @@ def _run(cmd: list[str], timeout: int = 3) -> str:
     except Exception:
         return ""
 
-def _build_system_prompt() -> str:
-    kernel   = _run(["uname", "-r"])
-    uptime   = _run(["uptime", "-p"])
-    df       = _run(["df", "-h", "--output=target,used,avail,pcent", "-x", "tmpfs", "-x", "devtmpfs"])
-    mem      = _run(["free", "-h", "--si"])
-    failed   = _run(["systemctl", "list-units", "--failed", "--no-legend", "--plain"])
-    docker   = _run(["docker", "ps", "--format", "{{.Names}} ({{.Image}})"])
-    gpu      = _run(["nvidia-smi", "--query-gpu=name,driver_version,temperature.gpu,utilization.gpu",
-                     "--format=csv,noheader"])
 
-    # Last 20 unique shell commands (strip timestamps if using EXTENDED_HISTORY)
+def _build_system_prompt(mode: str = "default") -> str:
+    kernel  = _run(["uname", "-r"])
+    uptime  = _run(["uptime", "-p"])
+    df      = _run(["df", "-h", "--output=target,used,avail,pcent", "-x", "tmpfs", "-x", "devtmpfs"])
+    mem     = _run(["free", "-h", "--si"])
+    failed  = _run(["systemctl", "list-units", "--failed", "--no-legend", "--plain"])
+    docker  = _run(["docker", "ps", "--format", "{{.Names}} ({{.Image}})"])
+    gpu     = _run(["nvidia-smi", "--query-gpu=name,driver_version,temperature.gpu,utilization.gpu",
+                    "--format=csv,noheader"])
+
     history_file = Path.home() / ".zsh_history"
     history = ""
     if history_file.exists():
         try:
             lines = history_file.read_bytes().decode("utf-8", errors="replace").splitlines()
-            cmds = []
+            cmds: list[str] = []
             for l in reversed(lines):
-                # zsh extended history format: ": timestamp:elapsed;command"
                 cmd = re.sub(r"^: \d+:\d+;", "", l).strip()
                 if cmd and cmd not in cmds:
                     cmds.append(cmd)
@@ -76,13 +126,22 @@ def _build_system_prompt() -> str:
         except Exception:
             pass
 
+    # Mode-specific persona
+    personas: dict[str, str] = {
+        "default": "You are the HarnessOS AI assistant — a helpful, concise system expert. Keep answers focused and practical.",
+        "code":    "You are a senior software engineer and coding agent running on HarnessOS. Focus on correct, idiomatic code. When writing code always include the language in code blocks. Prefer short answers with working examples.",
+        "doctor":  "You are a systems diagnostics expert running on HarnessOS. Analyze problems step by step. Show your reasoning. Identify root causes, not just symptoms. Be precise about why something is failing.",
+        "explain": "You are a patient technical educator running on HarnessOS. Explain concepts clearly using analogies when helpful. Adapt depth to what the user is asking. Avoid jargon unless necessary.",
+        "commit":  "You are a git commit message expert. Write clear, conventional commit messages (type(scope): description). Be concise. First line max 72 chars. Follow conventional commits spec.",
+        "logs":    "You are a log analysis expert running on HarnessOS. Identify patterns, errors, and anomalies. Trace root causes through log entries. Correlate timestamps. Distinguish signal from noise.",
+    }
+
     parts = [
-        "You are the HarnessOS AI assistant — a helpful, concise system expert.",
+        personas.get(mode, personas["default"]),
         "You run directly on the user's machine and have real-time system context.",
         "When suggesting shell commands, wrap them in ```bash blocks.",
-        "Keep answers focused and practical. Prefer short answers unless depth is needed.",
         "",
-        f"## System",
+        "## System",
         f"OS      : HarnessOS (Arch Linux)",
         f"Kernel  : {kernel}",
         f"Uptime  : {uptime}",
@@ -113,10 +172,9 @@ def _build_system_prompt() -> str:
 
     return "\n".join(parts)
 
-# ── Ollama API ─────────────────────────────────────────────────────────────────
+# ── Ollama API ────────────────────────────────────────────────────────────────
 
 def _stream_chat(model: str, messages: list[dict]) -> str:
-    """Stream response from Ollama API. Prints to stdout, returns full text."""
     payload = json.dumps({
         "model":    model,
         "messages": messages,
@@ -155,34 +213,35 @@ def _stream_chat(model: str, messages: list[dict]) -> str:
     print(f"{RST}\n")
     return full_text
 
+
 def _check_ollama(model: str) -> None:
-    """Verify Ollama is running and the model is available."""
     try:
         urllib.request.urlopen("http://localhost:11434/api/tags", timeout=3)
     except urllib.error.URLError:
         print(f"{R}Ollama is not running.{RST}")
-        ans = input(f"Start it now? [Y/n] ").strip().lower()
+        ans = input("Start it now? [Y/n] ").strip().lower()
         if ans != "n":
             subprocess.run(["sudo", "systemctl", "start", "ollama"])
             import time; time.sleep(2)
         else:
             sys.exit(1)
 
-    # Check model exists
     try:
         with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
             data = json.loads(r.read())
             names = [m["name"].split(":")[0] for m in data.get("models", [])]
-            if model not in names and not any(model in n for n in names):
-                print(f"{Y}Model '{model}' not found. Pulling...{RST}")
+            base = model.split(":")[0]
+            if base not in names and not any(base in n for n in names):
+                print(f"{Y}Model '{model}' not found locally. Pulling...{RST}")
                 subprocess.run(["ollama", "pull", model])
     except Exception:
         pass
 
-# ── command detection + approval ───────────────────────────────────────────────
+# ── command detection + approval ──────────────────────────────────────────────
 
 _CODE_BLOCK = re.compile(r"```(?:bash|sh|zsh|shell)?\n(.*?)```", re.DOTALL)
 _INLINE_CMD = re.compile(r"`([^`\n]{3,80})`")
+
 
 def _extract_commands(text: str) -> list[str]:
     cmds: list[str] = []
@@ -192,12 +251,12 @@ def _extract_commands(text: str) -> list[str]:
             if line and not line.startswith("#"):
                 cmds.append(line)
     if not cmds:
-        # Fallback: look for inline code after action words
         for m in _INLINE_CMD.finditer(text):
             before = text[max(0, m.start() - 40): m.start()].lower()
             if any(kw in before for kw in ("run", "execute", "try", "use", "type")):
                 cmds.append(m.group(1))
     return cmds
+
 
 def _offer_run(cmds: list[str]) -> None:
     if not cmds:
@@ -220,32 +279,105 @@ def _offer_run(cmds: list[str]) -> None:
         subprocess.run(cmd, shell=True)
         print()
 
-# ── session persistence ────────────────────────────────────────────────────────
+# ── session persistence ───────────────────────────────────────────────────────
 
-def _save_session(messages: list[dict]) -> None:
+def _save_session(messages: list[dict], mode: str) -> None:
     SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-    path = SESSIONS_DIR / f"{ts}.json"
+    path = SESSIONS_DIR / f"{ts}-{mode}.json"
     path.write_text(json.dumps(messages, indent=2))
 
-# ── explain mode ──────────────────────────────────────────────────────────────
+# ── mode: explain ─────────────────────────────────────────────────────────────
 
 def _explain(model: str, command: str) -> None:
-    sys_prompt = _build_system_prompt()
+    sys_prompt = _build_system_prompt("explain")
     messages = [
-        {"role": "system",    "content": sys_prompt},
-        {"role": "user",      "content": f"Explain what this command does:\n\n```bash\n{command}\n```\n\nBe concise. Note any risks."},
+        {"role": "system", "content": sys_prompt},
+        {"role": "user",   "content": f"Explain what this command does:\n\n```bash\n{command}\n```\n\nBe concise. Note any risks."},
     ]
     print(f"\n{DIM}Explaining: {command}{RST}")
     _stream_chat(model, messages)
 
-# ── interactive chat loop ──────────────────────────────────────────────────────
+# ── mode: commit ──────────────────────────────────────────────────────────────
 
-def _chat_loop(model: str) -> None:
-    print(f"\n{C}{BOLD}  ⬡ HarnessOS AI{RST}  {DIM}({model}){RST}")
+def _commit_mode(model: str) -> None:
+    diff = _run(["git", "diff", "--staged"], timeout=5)
+    if not diff:
+        diff = _run(["git", "diff", "HEAD"], timeout=5)
+    if not diff:
+        print(f"{R}No staged changes found. Stage files first: git add <files>{RST}")
+        sys.exit(1)
+
+    print(f"\n{C}{BOLD}  ⬡ HarnessOS AI — Commit{RST}  {DIM}({model}){RST}\n")
+
+    sys_prompt = _build_system_prompt("commit")
+    messages = [
+        {"role": "system", "content": sys_prompt},
+        {"role": "user",   "content": f"Generate a conventional commit message for this diff:\n\n```diff\n{diff[:6000]}\n```\n\nRespond with ONLY the commit message — no explanation, no markdown, no quotes."},
+    ]
+    response = _stream_chat(model, messages)
+    commit_msg = response.strip().strip('"').strip("'")
+
+    print(f"{DIM}{'─' * 60}{RST}")
+    ans = input(f"Use this message? [{G}Y{RST}]es / [{Y}e{RST}]dit / [{R}n{RST}]o: ").strip().lower()
+    if ans == "n":
+        return
+    if ans == "e":
+        commit_msg = input("Edit message: ").strip() or commit_msg
+
+    subprocess.run(["git", "commit", "-m", commit_msg])
+
+# ── mode: logs ────────────────────────────────────────────────────────────────
+
+def _logs_mode(model: str, log_file: str | None) -> None:
+    print(f"\n{C}{BOLD}  ⬡ HarnessOS AI — Log Analyzer{RST}  {DIM}({model}){RST}\n")
+
+    if log_file:
+        try:
+            log_content = Path(log_file).read_text(errors="replace")[-8000:]
+            context = f"Log file: {log_file}\n\n{log_content}"
+        except Exception as e:
+            print(f"{R}Cannot read {log_file}: {e}{RST}")
+            sys.exit(1)
+    else:
+        journal = _run(["journalctl", "-n", "100", "--no-pager"], timeout=5)
+        context = f"Recent systemd journal (last 100 lines):\n\n{journal}"
+
+    sys_prompt = _build_system_prompt("logs")
+    messages: list[dict] = [
+        {"role": "system", "content": sys_prompt},
+        {"role": "user",   "content": f"Analyze these logs and report: errors, warnings, anomalies, root causes.\n\n{context}"},
+    ]
+    response = _stream_chat(model, messages)
+    messages.append({"role": "assistant", "content": response})
+
+    # Continue as interactive chat with log context loaded
+    print(f"{DIM}Log loaded — continue asking questions below.{RST}\n")
+    try:
+        while True:
+            try:
+                user_in = input(f"{C}you{RST} › ").strip()
+            except EOFError:
+                break
+            if not user_in or user_in.lower() in ("exit", "quit", "q"):
+                break
+            messages.append({"role": "user", "content": user_in})
+            resp = _stream_chat(model, messages)
+            messages.append({"role": "assistant", "content": resp})
+            _offer_run(_extract_commands(resp))
+    except KeyboardInterrupt:
+        pass
+
+    _save_session(messages, "logs")
+
+# ── interactive chat loop ─────────────────────────────────────────────────────
+
+def _chat_loop(model: str, mode: str) -> None:
+    label = MODE_LABELS.get(mode, "General")
+    print(f"\n{C}{BOLD}  ⬡ HarnessOS AI — {label}{RST}  {DIM}({model}){RST}")
     print(f"  {DIM}Type your question. Ctrl+C or 'exit' to quit.{RST}\n")
 
-    sys_prompt = _build_system_prompt()
+    sys_prompt = _build_system_prompt(mode)
     messages: list[dict] = [{"role": "system", "content": sys_prompt}]
 
     try:
@@ -258,39 +390,63 @@ def _chat_loop(model: str) -> None:
                 continue
             if user_in.lower() in ("exit", "quit", "q"):
                 break
-
             messages.append({"role": "user", "content": user_in})
             response = _stream_chat(model, messages)
             messages.append({"role": "assistant", "content": response})
-
-            cmds = _extract_commands(response)
-            _offer_run(cmds)
-
+            _offer_run(_extract_commands(response))
     except KeyboardInterrupt:
         print(f"\n{DIM}Interrupted.{RST}")
 
     if len(messages) > 1:
-        _save_session(messages)
+        _save_session(messages, mode)
         print(f"{DIM}Session saved to {SESSIONS_DIR}{RST}\n")
 
 # ── main ──────────────────────────────────────────────────────────────────────
+
+MODES = list(MODE_DEFAULTS.keys())
 
 def main() -> None:
     p = argparse.ArgumentParser(
         prog="harness-ai",
         description="System-aware AI chat for HarnessOS",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=f"""
+modes:
+  (none)   General chat              [{MODE_DEFAULTS['default']}]
+  code     Coding agent              [{MODE_DEFAULTS['code']}]
+  doctor   Diagnostics & reasoning   [{MODE_DEFAULTS['doctor']}]
+  explain  Technical explanations    [{MODE_DEFAULTS['explain']}]
+  commit   Generate git commit msg   [{MODE_DEFAULTS['commit']}]
+  logs     Analyze logs/journal      [{MODE_DEFAULTS['logs']}]
+
+upgrade models in ~/.config/harness/config.toml:
+  [models]
+  code   = "qwen3:27b"
+  doctor = "deepseek-r1:14b"
+  explain = "gemma3:12b"
+""",
     )
-    p.add_argument("-m", "--model",   default=None,  help="Ollama model (default: llama3.2)")
+    p.add_argument("mode",    nargs="?", choices=MODES + ["default"], default="default",
+                   help="AI mode (default: general chat)")
+    p.add_argument("-m", "--model",   default=None,  help="Override Ollama model")
     p.add_argument("-e", "--explain", metavar="CMD", help="Explain a shell command and exit")
+    p.add_argument("-f", "--file",    metavar="LOG", help="Log file to analyze (logs mode)")
     args = p.parse_args()
 
-    model = args.model or _load_model()
+    mode = args.mode or "default"
+    config = _load_config()
+    model = _resolve_model(mode, args.model, config)
+
     _check_ollama(model)
 
     if args.explain:
         _explain(model, args.explain)
+    elif mode == "commit":
+        _commit_mode(model)
+    elif mode == "logs":
+        _logs_mode(model, args.file)
     else:
-        _chat_loop(model)
+        _chat_loop(model, mode)
 
 
 if __name__ == "__main__":
