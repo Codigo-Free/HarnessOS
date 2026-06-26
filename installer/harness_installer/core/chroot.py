@@ -5,39 +5,70 @@ from pathlib import Path
 
 
 BASE_PACKAGES = [
+    # Base system
     "base", "base-devel", "linux-zen", "linux-zen-headers", "linux-firmware",
-    "mkinitcpio", "systemd-boot", "efibootmgr", "networkmanager", "bluez",
-    "btrfs-progs", "snapper", "snap-pac",
-    "zsh", "git", "curl", "wget", "vim", "neovim", "htop",
+    "mkinitcpio", "efibootmgr", "networkmanager", "bluez",
+    "btrfs-progs", "snapper", "snap-pac", "sudo",
+    # Editors & shell
+    "zsh", "git", "curl", "wget", "nano", "vim", "neovim", "htop",
+    # Containers
     "docker", "docker-compose", "docker-buildx",
-    "python", "python-pip", "python-pipx", "uv",
+    # Languages
+    "python", "python-pip", "python-pipx",
     "nodejs", "npm",
-    "dotnet-sdk", "jdk-openjdk", "php", "php-fpm",
+    "jdk-openjdk",
+    # AI
     "ollama", "gh",
+    # Desktop
     "hyprland", "waybar", "kitty", "wofi", "swaync",
     "pipewire", "pipewire-alsa", "pipewire-pulse", "wireplumber",
+    "xdg-desktop-portal-hyprland", "polkit-kde-agent", "swaybg",
+    # Fonts
     "ttf-jetbrains-mono-nerd", "ttf-font-awesome",
+    # TUI tools
     "stow", "fzf", "ripgrep", "fd", "bat", "eza", "zoxide", "lazygit",
     "starship", "zsh-autosuggestions", "zsh-syntax-highlighting",
+    "yazi", "bottom", "lnav",
 ]
+
+
+def _log(msg: str) -> None:
+    try:
+        with open("/tmp/harness-install.log", "a") as f:
+            f.write(msg + "\n")
+    except Exception:
+        pass
+
+
+def _run_logged(cmd: list[str]) -> None:
+    _log(f"$ {' '.join(str(c) for c in cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.stdout:
+        _log(result.stdout.strip())
+    if result.stderr:
+        _log(result.stderr.strip())
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(result.returncode, cmd, result.stdout, result.stderr)
 
 
 def pacstrap(mountpoint: str, extra_packages: list[str] | None = None) -> None:
     packages = list(BASE_PACKAGES)
     if extra_packages:
         packages.extend(extra_packages)
-    subprocess.run(
-        ["pacstrap", "-K", mountpoint] + packages,
-        check=True,
-    )
+    cmd = ["pacstrap", "-K", mountpoint] + packages
+    _log(f"$ {' '.join(cmd)}")
+    # pacstrap streams output — run without capture so user sees progress
+    result = subprocess.run(cmd, text=True, capture_output=False)
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(result.returncode, cmd)
 
 
 def chroot_run(mountpoint: str, command: str | list[str]) -> None:
     if isinstance(command, str):
         cmd = ["arch-chroot", mountpoint, "/bin/bash", "-c", command]
     else:
-        cmd = ["arch-chroot", mountpoint] + command
-    subprocess.run(cmd, check=True)
+        cmd = ["arch-chroot", mountpoint] + list(command)
+    _run_logged(cmd)
 
 
 def configure_system(mountpoint: str, hostname: str, locale: str, timezone: str) -> None:

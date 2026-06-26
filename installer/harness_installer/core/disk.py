@@ -40,7 +40,22 @@ def list_disks() -> list[dict]:
 
 
 def _run(cmd: list[str]) -> None:
-    subprocess.run(cmd, check=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    _log_to_file(f"$ {' '.join(cmd)}")
+    if result.stdout:
+        _log_to_file(result.stdout.strip())
+    if result.stderr:
+        _log_to_file(result.stderr.strip())
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(result.returncode, cmd, result.stdout, result.stderr)
+
+
+def _log_to_file(msg: str) -> None:
+    try:
+        with open("/tmp/harness-install.log", "a") as f:
+            f.write(msg + "\n")
+    except Exception:
+        pass
 
 
 def partition_disk(disk: str) -> tuple[str, str]:
