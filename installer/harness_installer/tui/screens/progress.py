@@ -1,5 +1,7 @@
 """HarnessOS Installer — Installation Progress Screen"""
 import threading
+import os
+from datetime import datetime
 from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.widgets import Static, Log, ProgressBar
@@ -12,6 +14,7 @@ from harness_installer.core import bootloader as boot_core
 from harness_installer.core import snapshots as snap_core
 from harness_installer.core import dotfiles as dotfiles_core
 
+LOG_FILE = "/tmp/harness-install.log"
 
 STEPS = [
     "Partitioning disk",
@@ -59,23 +62,39 @@ class ProgressScreen(Screen):
         )
 
     def on_mount(self) -> None:
+        open(LOG_FILE, "w").close()
         threading.Thread(target=self._run_install, daemon=True).start()
 
     def _log(self, msg: str) -> None:
-        with open("/tmp/harness-install.log", "a") as f:
-            f.write(msg + "\n")
+        try:
+            with open(LOG_FILE, "a") as f:
+                ts = datetime.now().isoformat(timespec="seconds")
+                f.write(f"[{ts}] {msg}\n")
+        except Exception:
+            pass
 
-        def _write():
+        try:
             self.query_one("#install-log", Log).write_line(msg)
-        self.app.call_from_thread(_write)
+        except Exception:
+            pass
 
     def _set_step(self, step: str, n: int) -> None:
-        label = f"Step {n}/{len(STEPS)}: {step}"
-
-        def _update():
-            self.query_one("#step-label", Static).update(label)
+        self._log(f">>> STEP {n}/{len(STEPS)}: {step}")
+        try:
+            self.query_one("#step-label", Static).update(f"Step {n}/{len(STEPS)}: {step}")
+        except Exception:
+            pass
+        try:
             self.query_one("#progress", ProgressBar).advance(1)
-        self.app.call_from_thread(_update)
+        except Exception:
+            pass
+
+    def _set_label(self, text: str) -> None:
+        self._log(text)
+        try:
+            self.query_one("#step-label", Static).update(text)
+        except Exception:
+            pass
 
     def _run_install(self) -> None:
         cfg = self.app.config
@@ -147,16 +166,12 @@ class ProgressScreen(Screen):
             self._log("")
             self._log("✓ HarnessOS installed successfully!")
             self._log("  Remove the installation media and reboot.")
-            self._log("  First login: user = " + cfg.username)
+            self._log(f"  First login: user = {cfg.username}")
             self._log("  Hyprland starts automatically on first login.")
-            self.call_from_thread(
-                self.query_one("#step-label", Static).update,
-                "Installation complete! You can now reboot.",
-            )
+            self._set_label("Installation complete! You can now reboot.")
 
         except Exception as exc:
+            import traceback
             self._log(f"\n✗ Installation failed: {exc}")
-            self.call_from_thread(
-                self.query_one("#step-label", Static).update,
-                f"Error: {exc}",
-            )
+            self._log(traceback.format_exc())
+            self._set_label(f"Error: {exc}")
