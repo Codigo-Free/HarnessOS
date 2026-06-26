@@ -101,6 +101,9 @@ class ProgressScreen(Screen):
         mp  = "/mnt"
 
         try:
+            if not isinstance(cfg.disk, str) or not cfg.disk:
+                raise ValueError(f"No disk selected (got {cfg.disk!r})")
+
             self._set_step("Partitioning disk", 1)
             self._log(f"Partitioning {cfg.disk}...")
             efi, root = disk_core.partition_disk(cfg.disk)

@@ -53,8 +53,9 @@ class DiskSetupScreen(Screen):
             self.app.pop_screen()
         elif event.button.id == "btn-next":
             disk_widget = self.query_one("#disk-select", Select)
-            if disk_widget.value and disk_widget.value != Select.BLANK:
-                self.app.config.disk = disk_widget.value
-                self.app.push_screen("user")
-            else:
+            value = disk_widget.value
+            if value is Select.BLANK or not isinstance(value, str):
                 self.notify("Please select a disk first.", severity="error")
+                return
+            self.app.config.disk = value
+            self.app.push_screen("user")
