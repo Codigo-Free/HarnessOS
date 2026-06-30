@@ -148,7 +148,7 @@ class ProgressScreen(Screen):
 
             self._set_step("Installing bootloader", 9)
             self._log("Installing systemd-boot...")
-            boot_core.install_bootloader(mp, cfg.root_part, nvidia=cfg.install_nvidia)
+            boot_core.install_bootloader(mp, cfg.root_part, cfg.efi_part, nvidia=cfg.install_nvidia)
 
             self._set_step("Configuring snapper", 10)
             self._log("Setting up BTRFS snapshots with snapper...")

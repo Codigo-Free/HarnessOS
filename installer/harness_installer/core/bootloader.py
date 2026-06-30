@@ -1,11 +1,40 @@
 """HarnessOS — systemd-boot installation"""
+import re
 import subprocess
 from pathlib import Path
 
 from . import disk as disk_core
 
+EFI_BOOT_LABEL = "HarnessOS"
 
-def install_bootloader(mountpoint: str, root_part: str, nvidia: bool = False) -> None:
+
+def _disk_and_partnum(part_path: str) -> tuple[str, str]:
+    """Split a partition device path (/dev/sda1, /dev/nvme0n1p1) into (disk, partition number)."""
+    m = re.match(r"^(/dev/(?:[a-z]+|nvme\d+n\d+))p?(\d+)$", part_path)
+    if not m:
+        raise RuntimeError(f"Could not parse disk/partition number from {part_path!r}")
+    return m.group(1), m.group(2)
+
+
+def _ensure_efi_boot_entry(efi_part: str) -> None:
+    """`bootctl install` run inside arch-chroot can copy the loader files to
+    the ESP but silently fail to register the NVRAM boot entry — chroots
+    don't always get full EFI variable write access. Without an NVRAM entry
+    the firmware has nothing telling it to boot this disk, even though every
+    file on the ESP is correct. Create the entry explicitly rather than
+    trusting bootctl did it.
+    """
+    existing = subprocess.run(["efibootmgr"], capture_output=True, text=True)
+    if re.search(rf"^\S+\* {re.escape(EFI_BOOT_LABEL)}\b", existing.stdout, re.MULTILINE):
+        return
+    disk, partnum = _disk_and_partnum(efi_part)
+    subprocess.run([
+        "efibootmgr", "--create", "--disk", disk, "--part", partnum,
+        "--label", EFI_BOOT_LABEL, "--loader", r"\EFI\systemd\systemd-bootx64.efi",
+    ], check=True)
+
+
+def install_bootloader(mountpoint: str, root_part: str, efi_part: str, nvidia: bool = False) -> None:
     """Install systemd-boot and create boot entries."""
     boot_dir = str(Path(mountpoint) / "boot")
     disk_core.assert_mounted(boot_dir, "EFI System Partition")
@@ -14,6 +43,7 @@ def install_bootloader(mountpoint: str, root_part: str, nvidia: bool = False) ->
         ["arch-chroot", mountpoint, "bootctl", "--path=/boot", "install"],
         check=True,
     )
+    _ensure_efi_boot_entry(efi_part)
 
     mp = Path(mountpoint)
     loader_dir = mp / "boot" / "loader"
@@ -84,4 +114,12 @@ def verify_bootloader(mountpoint: str) -> None:
         raise RuntimeError(
             "bootctl status doesn't report the HarnessOS entry sourced from the ESP:\n"
             f"{result.stdout}\n{result.stderr}"
+        )
+
+    efi_entries = subprocess.run(["efibootmgr"], capture_output=True, text=True)
+    if not re.search(rf"^\S+\* {re.escape(EFI_BOOT_LABEL)}\b", efi_entries.stdout, re.MULTILINE):
+        raise RuntimeError(
+            "No NVRAM boot entry found for HarnessOS — the loader files are on the "
+            "ESP but the firmware has nothing telling it to boot this disk. "
+            f"efibootmgr output:\n{efi_entries.stdout}{efi_entries.stderr}"
         )
