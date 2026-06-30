@@ -152,7 +152,7 @@ class ProgressScreen(Screen):
 
             self._set_step("Configuring snapper", 10)
             self._log("Setting up BTRFS snapshots with snapper...")
-            snap_core.configure_snapper(mp)
+            snap_core.configure_snapper(mp, cfg.root_part)
 
             self._set_step("Installing npm globals", 11)
             self._log("Installing Claude CLI, pnpm, TypeScript...")

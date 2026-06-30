@@ -14,6 +14,16 @@ sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 locale-gen
 
 # ---------------------------------------------------------------------------
+# PACMAN KEYRING — must be initialized in the live env itself, not just on
+# the build host. Without this the live ISO boots with no /etc/pacman.d/gnupg
+# at all, and any pacman/pacstrap operation from the live session (including
+# harness-install) fails with "keyring is not writable" for every package.
+# Offline-safe: reads from the already-installed archlinux-keyring package.
+# ---------------------------------------------------------------------------
+pacman-key --init
+pacman-key --populate archlinux
+
+# ---------------------------------------------------------------------------
 # SHELL — set zsh as default for root in live env
 # ---------------------------------------------------------------------------
 chsh -s /bin/zsh root
