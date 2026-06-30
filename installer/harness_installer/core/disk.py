@@ -115,8 +115,55 @@ def mount_efi(efi_part: str, mountpoint: str = "/mnt") -> None:
     _run(["mount", efi_part, str(efi_dir)])
 
 
+def is_mounted(path: str) -> bool:
+    """True if `path` is itself a mountpoint (not just a directory on a parent mount)."""
+    return subprocess.run(["mountpoint", "-q", path]).returncode == 0
+
+
+def assert_mounted(path: str, what: str) -> None:
+    """Raise a clear error if `path` isn't actually a mountpoint.
+
+    Prevents installer steps from silently writing files onto the parent
+    filesystem when an expected mount (e.g. the ESP) never happened —
+    see docs/07-known-issues.md for the incident this guards against.
+    """
+    if not is_mounted(path):
+        raise RuntimeError(
+            f"{what} is not mounted at {path} — refusing to write here "
+            f"(would silently land on the parent filesystem instead)."
+        )
+
+
+def persist_logs(mountpoint: str) -> None:
+    """Copy install logs from the live session into the target disk.
+
+    Both the live ISO's root and /tmp are RAM-backed and vanish on reboot,
+    so a log written only there is lost exactly when it's needed most
+    (installer crashed). Best-effort: never raises.
+    """
+    log_dir = Path(mountpoint) / "var" / "log"
+    if not log_dir.is_dir():
+        return
+    dest = log_dir / "harness-install.log"
+    for src in (Path("/var/log/harness-install.log"), Path("/tmp/harness-install.log")):
+        try:
+            if src.is_file():
+                with dest.open("a") as out, src.open() as inp:
+                    out.write(f"\n--- {src} ---\n")
+                    out.write(inp.read())
+        except Exception:
+            pass
+
+
 def generate_fstab(mountpoint: str) -> None:
     result = subprocess.run(["genfstab", "-U", mountpoint], capture_output=True, text=True, check=True)
+    content = result.stdout
+    non_comment_lines = [l for l in content.splitlines() if l.strip() and not l.strip().startswith("#")]
+    if not non_comment_lines:
+        raise RuntimeError(
+            "genfstab produced no filesystem entries — installation mounts under "
+            f"{mountpoint} are likely incomplete."
+        )
     fstab_path = Path(mountpoint) / "etc" / "fstab"
     with fstab_path.open("a") as f:
-        f.write(result.stdout)
+        f.write(content)

@@ -1,4 +1,5 @@
 """HarnessOS — pacstrap and arch-chroot wrappers"""
+import re
 import subprocess
 import shlex
 from pathlib import Path
@@ -66,7 +67,21 @@ def pacstrap(mountpoint: str, extra_packages: list[str] | None = None) -> None:
     if result.stderr:
         _log(result.stderr.strip())
     if result.returncode != 0:
-        raise subprocess.CalledProcessError(result.returncode, cmd, result.stdout, result.stderr)
+        reason = _pacstrap_failure_reason(result.stdout, result.stderr)
+        raise RuntimeError(
+            f"pacstrap failed ({reason}). See {LOG_FILE} for full output."
+        ) from subprocess.CalledProcessError(result.returncode, cmd, result.stdout, result.stderr)
+
+
+def _pacstrap_failure_reason(stdout: str, stderr: str) -> str:
+    """Best-effort extraction of *which* package/step pacstrap died on."""
+    errors = re.findall(r"^error:.*$", stderr, re.MULTILINE)
+    if errors:
+        return "; ".join(errors[:3])
+    installed = re.findall(r"^installing (\S+)", stdout, re.MULTILINE)
+    if installed:
+        return f"stopped after installing {len(installed)} package(s), last was {installed[-1]}"
+    return "no error detail captured — check raw pacstrap output"
 
 
 def chroot_run(mountpoint: str, command: str | list[str]) -> None:

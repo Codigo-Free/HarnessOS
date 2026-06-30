@@ -30,6 +30,7 @@ STEPS = [
     "Installing npm globals (Claude CLI, pnpm, TypeScript)",
     "Deploying dotfiles",
     "Generating fstab",
+    "Verifying installation",
     "Done!",
 ]
 
@@ -165,13 +166,18 @@ class ProgressScreen(Screen):
             self._log("Generating /etc/fstab...")
             disk_core.generate_fstab(mp)
 
-            self._set_step("Done!", 14)
+            self._set_step("Verifying installation", 14)
+            self._log("Confirming bootloader is installed on the ESP, not just staged...")
+            boot_core.verify_bootloader(mp)
+
+            self._set_step("Done!", 15)
             self._log("")
             self._log("✓ HarnessOS installed successfully!")
             self._log("  Remove the installation media and reboot.")
             self._log(f"  First login: user = {cfg.username}")
             self._log("  Hyprland starts automatically on first login.")
             self._set_label("Installation complete! You can now reboot.")
+            disk_core.persist_logs(mp)
 
         except Exception as exc:
             import traceback
@@ -179,3 +185,4 @@ class ProgressScreen(Screen):
             self._log(traceback.format_exc())
             self._log(f"\n  → Full log: {LOG_FILE}")
             self._set_label(f"Error: {exc}  |  Log: {LOG_FILE}")
+            disk_core.persist_logs(mp)

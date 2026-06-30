@@ -2,9 +2,14 @@
 import subprocess
 from pathlib import Path
 
+from . import disk as disk_core
+
 
 def install_bootloader(mountpoint: str, root_part: str, nvidia: bool = False) -> None:
     """Install systemd-boot and create boot entries."""
+    boot_dir = str(Path(mountpoint) / "boot")
+    disk_core.assert_mounted(boot_dir, "EFI System Partition")
+
     subprocess.run(
         ["arch-chroot", mountpoint, "bootctl", "--path=/boot", "install"],
         check=True,
@@ -52,3 +57,31 @@ def install_bootloader(mountpoint: str, root_part: str, nvidia: bool = False) ->
         f"initrd  /initramfs-linux-zen-fallback.img\n"
         f"options {root_opts}\n"
     )
+
+
+def verify_bootloader(mountpoint: str) -> None:
+    """Confirm the boot entry actually resolves from the ESP, not the root subvolume.
+
+    Catches the failure mode in docs/07-known-issues.md: bootctl binaries land
+    on the ESP but the kernel/initrd/entry get written to the parent filesystem
+    because the ESP wasn't mounted when those files were created.
+    """
+    boot_dir = str(Path(mountpoint) / "boot")
+    disk_core.assert_mounted(boot_dir, "EFI System Partition")
+
+    for required in ("vmlinuz-linux-zen", "initramfs-linux-zen.img", "loader/entries/harnessOS.conf"):
+        if not (Path(mountpoint) / "boot" / required).is_file():
+            raise RuntimeError(
+                f"Expected {required} on the ESP after bootloader install but it's missing — "
+                "boot files may have been written before the ESP was mounted."
+            )
+
+    result = subprocess.run(
+        ["arch-chroot", mountpoint, "bootctl", "status"],
+        capture_output=True, text=True,
+    )
+    if "harnessOS.conf" not in result.stdout or "EFI System Partition" not in result.stdout:
+        raise RuntimeError(
+            "bootctl status doesn't report the HarnessOS entry sourced from the ESP:\n"
+            f"{result.stdout}\n{result.stderr}"
+        )
