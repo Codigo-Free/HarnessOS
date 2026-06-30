@@ -5,14 +5,21 @@ HarnessOS is an Arch Linux-based distro for AI-powered software development.
 Repository: https://github.com/Codigo-Free/HarnessOS
 
 ## Current Dev Environment (2026-06-30)
-- **Host machine**: HarnessOS live USB (`sdb`, HARNESS_202606) — Linux Mint fue reemplazado
-- **SSD** (`/dev/sda`): instalación parcial de HarnessOS — pacstrap falló a ~173/300+ paquetes, sin log de error (bug corregido). EFI vacía. BTRFS subvolumes creados correctamente.
+- **Host machine**: ahora booteando directo desde el SSD instalado (`/dev/sda2`, hostname `harnessOS`, BTRFS subvol `@`) — ya no es live USB.
+- **Instalación en SSD**: el pacstrap parcial documentado antes (falló a ~173/300+ paquetes) dejó el sistema arrancable pero con ~70 paquetes de `archiso/packages.x86_64` faltantes (grub, tmux, jq, k9s, hyprlock, hypridle, hyprpaper, dotnet-sdk, terminus-font, etc.). Se reinstalan con `pacman -S --needed` contra la lista del repo.
+- **GPU**: Intel HD 620 (iGPU, `i915`) + NVIDIA GeForce MX150 (`10de:134e`, Pascal, sin GSP) en óptimus. El sistema tenía `nvidia-open-dkms` instalado manualmente (fuera del instalador) — **no soporta GPUs sin GSP** y el kernel falla al cargar el driver. Corregido a `nvidia-dkms` (propietario), que es lo que el instalador (`installer/harness_installer/core/gpu.py`) siempre seleccionó correctamente.
 - **`build-docker.sh` NO funciona** en live USB: Docker falla con `invalid argument` al montar overlayfs sobre el root que ya es overlayfs (nested overlayfs no soportado por el kernel).
 - **Build en live USB**: usar `mkarchiso` directamente tras `sudo pacman -Sy archiso`. Requiere además:
   1. Activar mirrors: editar `/etc/pacman.d/mirrorlist` (CDN global a veces timeout — usar mirrors de España)
   2. Inicializar keyring: `sudo pacman-key --init && sudo pacman-key --populate archlinux`
   3. Inyectar installer manualmente: `cp -r installer/harness_installer archiso/airootfs/usr/local/lib/harness/installer/`
   4. Ejecutar: `sudo mkarchiso -v -w /tmp/harness-work -o ./out ./archiso`
+
+## Known Issues / Gotchas (encontrados post-instalación en SSD)
+- **Wallpaper ausente en sistemas instalados**: `hyprland.conf` ejecuta `swaybg -i /usr/share/harness/logo.png`, pero ese archivo solo existe en el overlay del ISO en vivo (`archiso/airootfs/usr/share/harness/logo.png`) — el instalador nunca lo copiaba al disco. **Corregido**: nueva función `deploy_branding()` en `installer/harness_installer/core/dotfiles.py`, invocada desde `progress.py` justo después de `deploy_dotfiles()`.
+- **NVIDIA — nunca instalar `nvidia-open-dkms` manualmente**: GPUs pre-Turing (Maxwell/Pascal, sin GSP) no son soportadas por los módulos open-source y el kernel falla el probe (`probe with driver nvidia failed with error -1`). Usar siempre `nvidia-dkms`, como ya hace `gpu.py`.
+- **`systemd-vconsole-setup.service` falla** (`setfont` exit 66) si falta el paquete `terminus-font` (usado por `FONT=ter-v18n` en `/etc/vconsole.conf`) — es uno de los paquetes que quedan fuera si pacstrap se corta a la mitad.
+- **`/boot` world-readable**: con `fmask=0022,dmask=0022` en fstab, `bootctl` marca `random-seed` como agujero de seguridad. Fix: `fmask=0137,dmask=0027`.
 
 ## Key Technical Decisions
 - **Kernel**: `linux-zen` (lower desktop latency vs mainline)

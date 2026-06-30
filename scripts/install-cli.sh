@@ -173,11 +173,11 @@ pacstrap -K "$MP" \
     zsh zsh-autosuggestions zsh-syntax-highlighting starship \
     docker docker-compose docker-buildx \
     python python-pip python-pipx nodejs npm jdk-openjdk \
-    ollama gh \
+    ollama github-cli \
     hyprland waybar kitty wofi swaync swaybg \
     xdg-desktop-portal-hyprland polkit-kde-agent \
     pipewire pipewire-alsa pipewire-pulse wireplumber \
-    ttf-jetbrains-mono-nerd ttf-font-awesome \
+    ttf-jetbrains-mono-nerd otf-font-awesome \
     stow fzf ripgrep fd bat eza zoxide lazygit yazi bottom lnav \
     kanshi wlr-randr python-textual python-pygame imv || {
         warn "pacstrap failed — dumping mirror and pacman state"
@@ -290,7 +290,8 @@ fi
 # Copy HarnessOS scripts
 if [[ -d "/usr/local/bin" ]]; then
     for f in harness harness-ai harness-install harness-detect-gpu harness-power \
-              harness-welcome harness-online-setup harness-easter-egg; do
+              harness-welcome harness-online-setup harness-easter-egg \
+              harness-keyboard harness-ollama-status; do
         [[ -f "/usr/local/bin/$f" ]] && cp "/usr/local/bin/$f" "$MP/usr/local/bin/$f"
     done
     chmod +x "$MP"/usr/local/bin/harness*
@@ -305,6 +306,12 @@ fi
 if [[ -d "/usr/local/share/harness" ]]; then
     mkdir -p "$MP/usr/local/share/"
     cp -r /usr/local/share/harness "$MP/usr/local/share/"
+fi
+
+# Copy wallpaper/branding assets — referenced by hyprland.conf's swaybg exec-once
+if [[ -d "/usr/share/harness" ]]; then
+    mkdir -p "$MP/usr/share/"
+    cp -r /usr/share/harness "$MP/usr/share/"
 fi
 
 echo ""

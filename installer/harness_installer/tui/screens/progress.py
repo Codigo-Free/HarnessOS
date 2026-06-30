@@ -161,6 +161,10 @@ class ProgressScreen(Screen):
             self._set_step("Deploying dotfiles", 12)
             self._log(f"Copying Hyprland, waybar, kitty configs to /home/{cfg.username}...")
             dotfiles_core.deploy_dotfiles(mp, cfg.username)
+            self._log("Copying wallpaper/branding assets to /usr/share/harness...")
+            dotfiles_core.deploy_branding(mp)
+            self._log("Copying harness-* CLI toolkit to /usr/local/{bin,lib,share}...")
+            dotfiles_core.deploy_cli_tools(mp)
 
             self._set_step("Generating fstab", 13)
             self._log("Generating /etc/fstab...")

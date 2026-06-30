@@ -3,7 +3,6 @@ cuda
 cudnn
 python-pytorch-cuda
 python-torchvision
-python-torchaudio
 jupyter-notebook
 python-pandas
 python-numpy
