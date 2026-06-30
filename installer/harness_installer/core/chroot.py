@@ -19,13 +19,13 @@ BASE_PACKAGES = [
     "nodejs", "npm",
     "jdk-openjdk",
     # AI
-    "ollama", "gh",
+    "ollama", "github-cli",
     # Desktop
     "hyprland", "waybar", "kitty", "wofi", "swaync",
     "pipewire", "pipewire-alsa", "pipewire-pulse", "wireplumber",
     "xdg-desktop-portal-hyprland", "polkit-kde-agent", "swaybg",
     # Fonts
-    "ttf-jetbrains-mono-nerd", "ttf-font-awesome",
+    "ttf-jetbrains-mono-nerd", "otf-font-awesome",
     # TUI tools
     "stow", "fzf", "ripgrep", "fd", "bat", "eza", "zoxide", "lazygit",
     "starship", "zsh-autosuggestions", "zsh-syntax-highlighting",
