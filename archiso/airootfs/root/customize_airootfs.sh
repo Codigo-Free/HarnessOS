@@ -9,6 +9,7 @@ echo ">>> HarnessOS: customize_airootfs.sh starting..."
 # ---------------------------------------------------------------------------
 # LOCALE
 # ---------------------------------------------------------------------------
+sed -i 's/#es_ES.UTF-8 UTF-8/es_ES.UTF-8 UTF-8/' /etc/locale.gen
 sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 locale-gen
 
@@ -38,8 +39,10 @@ systemctl enable NetworkManager.service
 systemctl enable bluetooth.service
 systemctl enable docker.service
 systemctl enable ollama.service
+systemctl enable udisks2.service
 systemctl enable harness-firstboot.service
 systemctl enable harness-online-setup.service
+systemctl enable harness-mirrors.service
 
 # Disable conflicting network services
 systemctl disable dhcpcd.service 2>/dev/null || true

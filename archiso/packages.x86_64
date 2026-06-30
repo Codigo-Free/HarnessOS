@@ -19,6 +19,7 @@ os-prober
 # =============================================================================
 # NETWORKING
 # =============================================================================
+reflector
 networkmanager
 network-manager-applet
 nm-connection-editor
@@ -233,3 +234,6 @@ imv
 # =============================================================================
 terminus-font
 memtest86+-efi
+udisks2
+usbutils
+udiskie

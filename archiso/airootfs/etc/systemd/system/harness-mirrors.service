@@ -1,0 +1,16 @@
+[Unit]
+Description=HarnessOS — Update pacman mirrorlist with reflector
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/harness-mirrors-done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/reflector --country Spain --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+ExecStartPost=/usr/bin/touch /var/lib/harness-mirrors-done
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

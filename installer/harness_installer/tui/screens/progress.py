@@ -14,7 +14,7 @@ from harness_installer.core import bootloader as boot_core
 from harness_installer.core import snapshots as snap_core
 from harness_installer.core import dotfiles as dotfiles_core
 
-LOG_FILE = "/tmp/harness-install.log"
+LOG_FILE = "/var/log/harness-install.log"
 
 STEPS = [
     "Partitioning disk",
@@ -128,8 +128,8 @@ class ProgressScreen(Screen):
             chroot_core.pacstrap(mp, cfg.extra_packages)
 
             self._set_step("Configuring system", 6)
-            self._log("Setting hostname, locale, timezone, enabling services...")
-            chroot_core.configure_system(mp, cfg.hostname, cfg.locale, cfg.timezone)
+            self._log("Setting hostname, locale, timezone, keymap, enabling services...")
+            chroot_core.configure_system(mp, cfg.hostname, cfg.locale, cfg.timezone, cfg.keymap)
 
             self._set_step("Creating user", 7)
             self._log(f"Creating user '{cfg.username}'...")
@@ -177,4 +177,5 @@ class ProgressScreen(Screen):
             import traceback
             self._log(f"\n✗ Installation failed: {exc}")
             self._log(traceback.format_exc())
-            self._set_label(f"Error: {exc}")
+            self._log(f"\n  → Full log: {LOG_FILE}")
+            self._set_label(f"Error: {exc}  |  Log: {LOG_FILE}")

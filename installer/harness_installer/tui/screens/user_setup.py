@@ -17,10 +17,12 @@ class UserSetupScreen(Screen):
             Input(id="password", password=True, placeholder="••••••••"),
             Label("Confirm Password:"),
             Input(id="password-confirm", password=True, placeholder="••••••••"),
-            Label("Timezone (e.g. America/New_York):"),
+            Label("Timezone (e.g. Europe/Madrid):"),
             Input(value="UTC", id="timezone", placeholder="UTC"),
-            Label("Locale (e.g. en_US.UTF-8 UTF-8):"),
-            Input(value="en_US.UTF-8 UTF-8", id="locale"),
+            Label("Locale (e.g. es_ES.UTF-8 UTF-8):"),
+            Input(value="es_ES.UTF-8 UTF-8", id="locale"),
+            Label("Distribución de teclado (e.g. es, us, latam):"),
+            Input(value="es", id="keymap", placeholder="es"),
             Horizontal(
                 Button("← Back", id="btn-back",  variant="default"),
                 Button("Next →", id="btn-next",  variant="primary"),
@@ -37,6 +39,7 @@ class UserSetupScreen(Screen):
             confirm  = self.query_one("#password-confirm", Input).value
             timezone = self.query_one("#timezone", Input).value.strip()
             locale   = self.query_one("#locale", Input).value.strip()
+            keymap   = self.query_one("#keymap", Input).value.strip()
 
             if not hostname or not username or not password:
                 self.notify("All fields are required.", severity="error")
@@ -44,6 +47,8 @@ class UserSetupScreen(Screen):
             if password != confirm:
                 self.notify("Passwords do not match.", severity="error")
                 return
+            if not keymap:
+                keymap = "es"
 
             cfg = self.app.config
             cfg.hostname = hostname
@@ -51,4 +56,5 @@ class UserSetupScreen(Screen):
             cfg.password = password
             cfg.timezone = timezone
             cfg.locale   = locale
+            cfg.keymap   = keymap
             self.app.push_screen("gpu")

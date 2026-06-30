@@ -32,9 +32,12 @@ BASE_PACKAGES = [
 ]
 
 
+LOG_FILE = "/var/log/harness-install.log"
+
+
 def _log(msg: str) -> None:
     try:
-        with open("/tmp/harness-install.log", "a") as f:
+        with open(LOG_FILE, "a") as f:
             f.write(msg + "\n")
     except Exception:
         pass
@@ -57,10 +60,13 @@ def pacstrap(mountpoint: str, extra_packages: list[str] | None = None) -> None:
         packages.extend(extra_packages)
     cmd = ["pacstrap", "-K", mountpoint] + packages
     _log(f"$ {' '.join(cmd)}")
-    # pacstrap streams output — run without capture so user sees progress
-    result = subprocess.run(cmd, text=True, capture_output=False)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.stdout:
+        _log(result.stdout.strip())
+    if result.stderr:
+        _log(result.stderr.strip())
     if result.returncode != 0:
-        raise subprocess.CalledProcessError(result.returncode, cmd)
+        raise subprocess.CalledProcessError(result.returncode, cmd, result.stdout, result.stderr)
 
 
 def chroot_run(mountpoint: str, command: str | list[str]) -> None:
@@ -71,7 +77,13 @@ def chroot_run(mountpoint: str, command: str | list[str]) -> None:
     _run_logged(cmd)
 
 
-def configure_system(mountpoint: str, hostname: str, locale: str, timezone: str) -> None:
+def configure_system(
+    mountpoint: str,
+    hostname: str,
+    locale: str,
+    timezone: str,
+    keymap: str = "es",
+) -> None:
     mp = Path(mountpoint)
 
     # Hostname
@@ -89,6 +101,9 @@ def configure_system(mountpoint: str, hostname: str, locale: str, timezone: str)
         locale_gen.write_text(content.replace(f"#{locale}", locale))
     chroot_run(mountpoint, "locale-gen")
     (mp / "etc" / "locale.conf").write_text(f"LANG={locale.split()[0]}\n")
+
+    # Keyboard / console
+    (mp / "etc" / "vconsole.conf").write_text(f"KEYMAP={keymap}\nFONT=ter-v18n\n")
 
     # Timezone
     chroot_run(mountpoint, ["ln", "-sf", f"/usr/share/zoneinfo/{timezone}", "/etc/localtime"])

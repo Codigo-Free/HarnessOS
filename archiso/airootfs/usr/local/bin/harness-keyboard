@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# HarnessOS — Keyboard layout and locale configurator
+set -euo pipefail
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+LAYOUTS=(
+    "es:Español (España)"
+    "latam:Español (Latinoamérica)"
+    "us:English (US)"
+    "de:Deutsch"
+    "fr:Français"
+    "pt:Português"
+    "it:Italiano"
+    "br:Português (Brasil)"
+)
+
+echo -e "${CYAN}${BOLD}HarnessOS — Configuración de Teclado${RESET}"
+echo ""
+echo "Distribuciones disponibles:"
+for i in "${!LAYOUTS[@]}"; do
+    code="${LAYOUTS[$i]%%:*}"
+    name="${LAYOUTS[$i]#*:}"
+    echo "  $((i+1))) $name  [${code}]"
+done
+echo ""
+read -rp "Selecciona [1-${#LAYOUTS[@]}]: " choice
+
+if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
+    echo "Entrada inválida." >&2
+    exit 1
+fi
+
+idx=$((choice - 1))
+if [[ $idx -lt 0 || $idx -ge ${#LAYOUTS[@]} ]]; then
+    echo "Opción fuera de rango." >&2
+    exit 1
+fi
+
+KEYMAP="${LAYOUTS[$idx]%%:*}"
+NAME="${LAYOUTS[$idx]#*:}"
+
+echo ""
+echo -e "Aplicando distribución: ${BOLD}${NAME}${RESET} [${KEYMAP}]"
+
+# Apply to virtual console (persistent, requires root)
+if command -v localectl &>/dev/null; then
+    if [[ $EUID -eq 0 ]]; then
+        localectl set-keymap "$KEYMAP"
+    else
+        sudo localectl set-keymap "$KEYMAP" 2>/dev/null || \
+            echo "(Advertencia: no se pudo aplicar con localectl — ejecuta como root para persistir)"
+    fi
+fi
+
+# Apply immediately to running Hyprland session
+if [[ -n "${WAYLAND_DISPLAY:-}" ]] && command -v hyprctl &>/dev/null; then
+    hyprctl keyword input:kb_layout "$KEYMAP" && \
+        echo -e "  ${GREEN}✓${RESET} Hyprland actualizado (sesión actual)"
+fi
+
+echo -e "  ${GREEN}✓${RESET} Teclado configurado: ${BOLD}${KEYMAP}${RESET}"
+echo ""
+echo "Para hacerlo permanente en Hyprland, edita:"
+echo "  ~/.config/hypr/hyprland.conf  →  kb_layout = ${KEYMAP}"

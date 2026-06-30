@@ -22,5 +22,8 @@ if ! ping -c1 -W3 archlinux.org &>/dev/null; then
     exit 1
 fi
 
+mkdir -p /var/log
+exec 2>>/var/log/harness-install.log
+
 cd /usr/local/lib/harness/installer
 exec python3 -m harness_installer.main "$@"

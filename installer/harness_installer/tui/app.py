@@ -24,7 +24,8 @@ class InstallConfig:
     username:       str = ""
     password:       str = ""
     timezone:       str = "UTC"
-    locale:         str = "en_US.UTF-8 UTF-8"
+    locale:         str = "es_ES.UTF-8 UTF-8"
+    keymap:         str = "es"
     swap_gb:        int = 4
     gpu_vendor:     str = "unknown"
     install_nvidia: bool = False
