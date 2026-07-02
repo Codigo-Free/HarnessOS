@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""harness-mcp — MCP server exposing HarnessOS system context to AI agents.
+
+Speaks Model Context Protocol (JSON-RPC 2.0 over stdio, one message per
+line) with zero dependencies, so it works on a fresh install with nothing
+but the system Python. Every tool is read-only: agents get eyes on the
+system (journal, services, pacman, docker, GPU, Ollama models) but any
+mutation still goes through the agent's own shell tool where the user
+approves it.
+
+Registered for Claude Code and OpenCode by harness-online-setup; add it to
+any other MCP client with: command = /usr/local/bin/harness-mcp
+"""
+from __future__ import annotations
+
+import json
+import re
+import subprocess
+import sys
+import urllib.request
+from pathlib import Path
+
+PROTOCOL_VERSION = "2024-11-05"
+SERVER_INFO = {"name": "harness-mcp", "version": "1.0.0"}
+
+SAFE_NAME = re.compile(r"^[A-Za-z0-9@._+:-]+$")
+
+
+def _run(cmd: list[str], timeout: int = 10) -> str:
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        out = r.stdout.strip()
+        if r.returncode != 0 and not out:
+            return f"(command failed: {r.stderr.strip() or 'exit ' + str(r.returncode)})"
+        return out or "(no output)"
+    except FileNotFoundError:
+        return f"(not available: {cmd[0]} not installed)"
+    except subprocess.TimeoutExpired:
+        return f"(timeout running {' '.join(cmd)})"
+
+
+# ── tools ─────────────────────────────────────────────────────────────────────
+
+def tool_system_overview(_: dict) -> str:
+    sections = {
+        "Kernel":  _run(["uname", "-r"]),
+        "Uptime":  _run(["uptime", "-p"]),
+        "Memory":  _run(["free", "-h", "--si"]),
+        "Disk":    _run(["df", "-h", "--output=target,used,avail,pcent",
+                         "-x", "tmpfs", "-x", "devtmpfs"]),
+        "Failed services": _run(["systemctl", "list-units", "--failed",
+                                 "--no-legend", "--plain"]) or "(none)",
+        "GPU":     _run(["nvidia-smi", "--query-gpu=name,driver_version,memory.used,memory.total,utilization.gpu",
+                         "--format=csv,noheader"]),
+    }
+    return "\n\n".join(f"## {k}\n{v}" for k, v in sections.items())
+
+
+def tool_journal(args: dict) -> str:
+    lines = min(int(args.get("lines", 50)), 500)
+    cmd = ["journalctl", "--no-pager", "-n", str(lines)]
+    unit = args.get("unit")
+    if unit:
+        if not SAFE_NAME.match(unit):
+            return f"(invalid unit name: {unit!r})"
+        cmd += ["-u", unit]
+    if args.get("errors_only"):
+        cmd += ["-p", "err"]
+    if args.get("boot"):
+        cmd += ["-b"]
+    return _run(cmd, timeout=15)
+
+
+def tool_service_status(args: dict) -> str:
+    name = args.get("name", "")
+    if not SAFE_NAME.match(name):
+        return f"(invalid service name: {name!r})"
+    return _run(["systemctl", "status", "--no-pager", "-l", name])
+
+
+def tool_pacman(args: dict) -> str:
+    action = args.get("action", "")
+    arg = args.get("arg", "")
+    if arg and not (SAFE_NAME.match(arg) or Path(arg).is_absolute()):
+        return f"(invalid argument: {arg!r})"
+    match action:
+        case "info":
+            return _run(["pacman", "-Qi", arg]) if arg else "(action 'info' needs arg: package name)"
+        case "owns":
+            return _run(["pacman", "-Qo", arg]) if arg else "(action 'owns' needs arg: file path)"
+        case "orphans":
+            return _run(["pacman", "-Qtdq"]) or "(no orphaned packages)"
+        case "updates":
+            return _run(["checkupdates"], timeout=30)
+        case "search_installed":
+            return _run(["pacman", "-Qs", arg]) if arg else "(action 'search_installed' needs arg)"
+        case _:
+            return "(unknown action — use: info, owns, orphans, updates, search_installed)"
+
+
+def tool_docker_ps(_: dict) -> str:
+    return _run(["docker", "ps", "-a", "--format",
+                 "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"])
+
+
+def tool_ollama_models(_: dict) -> str:
+    try:
+        with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
+            data = json.loads(r.read())
+    except Exception as e:
+        return f"(Ollama not reachable on localhost:11434: {e})"
+    models = data.get("models", [])
+    if not models:
+        return "(no models pulled yet — run: ollama pull <model>)"
+    rows = [f"{m['name']}  ({m.get('size', 0) / 1e9:.1f} GB)" for m in models]
+    config = Path.home() / ".config" / "harness" / "config.toml"
+    routing = config.read_text() if config.exists() else "(no model routing configured)"
+    return "## Local models\n" + "\n".join(rows) + "\n\n## Routing (~/.config/harness/config.toml)\n" + routing
+
+
+TOOLS: dict[str, tuple[callable, str, dict]] = {
+    "system_overview": (
+        tool_system_overview,
+        "Snapshot of this HarnessOS machine: kernel, uptime, memory, disk usage, failed systemd units and GPU state. Call this first when diagnosing anything system-related.",
+        {"type": "object", "properties": {}},
+    ),
+    "journal": (
+        tool_journal,
+        "Read the systemd journal. Optionally filter by unit, current boot, or errors only.",
+        {"type": "object", "properties": {
+            "unit":        {"type": "string", "description": "systemd unit to filter, e.g. 'ollama.service'"},
+            "lines":       {"type": "integer", "description": "number of lines (default 50, max 500)"},
+            "errors_only": {"type": "boolean", "description": "only priority err and above"},
+            "boot":        {"type": "boolean", "description": "restrict to the current boot"},
+        }},
+    ),
+    "service_status": (
+        tool_service_status,
+        "Full 'systemctl status' of one service (state, recent log excerpt, cgroup).",
+        {"type": "object", "properties": {
+            "name": {"type": "string", "description": "unit name, e.g. 'docker.service'"},
+        }, "required": ["name"]},
+    ),
+    "pacman": (
+        tool_pacman,
+        "Query the package manager: info (package details), owns (which package owns a file), orphans, updates (pending updates), search_installed.",
+        {"type": "object", "properties": {
+            "action": {"type": "string", "enum": ["info", "owns", "orphans", "updates", "search_installed"]},
+            "arg":    {"type": "string", "description": "package name or absolute file path, depending on action"},
+        }, "required": ["action"]},
+    ),
+    "docker_ps": (
+        tool_docker_ps,
+        "List all Docker containers (running and stopped) with status and ports.",
+        {"type": "object", "properties": {}},
+    ),
+    "ollama_models": (
+        tool_ollama_models,
+        "List the local Ollama models available on this machine and the harness model-routing config. Useful to know which local LLMs can be delegated to.",
+        {"type": "object", "properties": {}},
+    ),
+}
+
+# ── JSON-RPC over stdio ───────────────────────────────────────────────────────
+
+def _reply(msg_id, result=None, error=None) -> None:
+    resp: dict = {"jsonrpc": "2.0", "id": msg_id}
+    if error is not None:
+        resp["error"] = error
+    else:
+        resp["result"] = result
+    sys.stdout.write(json.dumps(resp) + "\n")
+    sys.stdout.flush()
+
+
+def _handle(msg: dict) -> None:
+    method = msg.get("method", "")
+    msg_id = msg.get("id")
+    params = msg.get("params") or {}
+
+    if method == "initialize":
+        _reply(msg_id, {
+            "protocolVersion": params.get("protocolVersion", PROTOCOL_VERSION),
+            "capabilities": {"tools": {}},
+            "serverInfo": SERVER_INFO,
+        })
+    elif method == "ping":
+        _reply(msg_id, {})
+    elif method == "tools/list":
+        _reply(msg_id, {"tools": [
+            {"name": name, "description": desc, "inputSchema": schema}
+            for name, (_, desc, schema) in TOOLS.items()
+        ]})
+    elif method == "tools/call":
+        name = params.get("name", "")
+        if name not in TOOLS:
+            _reply(msg_id, error={"code": -32602, "message": f"Unknown tool: {name}"})
+            return
+        try:
+            text = TOOLS[name][0](params.get("arguments") or {})
+            _reply(msg_id, {"content": [{"type": "text", "text": text}], "isError": False})
+        except Exception as e:
+            _reply(msg_id, {"content": [{"type": "text", "text": f"Tool error: {e}"}], "isError": True})
+    elif method.startswith("notifications/"):
+        pass  # notifications carry no id and expect no response
+    elif msg_id is not None:
+        _reply(msg_id, error={"code": -32601, "message": f"Method not found: {method}"})
+
+
+def main() -> None:
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            msg = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        _handle(msg)
+
+
+if __name__ == "__main__":
+    main()

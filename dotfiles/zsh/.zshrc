@@ -155,6 +155,46 @@ project-init() {
 }
 
 # ---------------------------------------------------------------------------
+# HARNESS AI — shell integration
+#   wtf            → diagnose the last failed command with the local AI
+#   ask <pregunta> → one-shot answer with system context
+#   Ctrl+X Ctrl+A  → explain the command typed at the prompt (keeps your input)
+# ---------------------------------------------------------------------------
+if command -v harness-ai &>/dev/null; then
+    autoload -Uz add-zsh-hook
+    typeset -g _harness_last_cmd='' _harness_last_status=0
+
+    _harness_ai_preexec() { _harness_last_cmd="$1"; }
+    _harness_ai_precmd() {
+        local st=$?
+        [[ -n "$_harness_last_cmd" ]] || return 0
+        _harness_last_status=$st
+        # Hint only on "real" failures: skip 0, grep-style 1, Ctrl+C (130), SIGPIPE (141)
+        if (( st != 0 && st != 1 && st != 130 && st != 141 )); then
+            print -P "%F{240}↯ exit ${st} — escribe 'wtf' para diagnóstico con IA%f"
+        fi
+    }
+    add-zsh-hook preexec _harness_ai_preexec
+    add-zsh-hook precmd  _harness_ai_precmd
+
+    wtf() {
+        [[ -n "$_harness_last_cmd" ]] || { echo "wtf: no hay comando previo"; return 1; }
+        harness-ai doctor -q "The shell command \`${_harness_last_cmd}\` just exited with status ${_harness_last_status}. Diagnose the most likely cause on this machine and give the exact fix."
+    }
+
+    ask() { harness-ai -q "$*"; }
+
+    _harness_ai_explain_widget() {
+        [[ -n "$BUFFER" ]] || return 0
+        zle push-input
+        BUFFER="harness-ai --explain ${(q)BUFFER}"
+        zle accept-line
+    }
+    zle -N _harness_ai_explain_widget
+    bindkey '^X^A' _harness_ai_explain_widget
+fi
+
+# ---------------------------------------------------------------------------
 # STARSHIP PROMPT
 # ---------------------------------------------------------------------------
 command -v starship &>/dev/null && eval "$(starship init zsh)"

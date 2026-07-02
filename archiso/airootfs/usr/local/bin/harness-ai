@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import sys
+import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -63,21 +64,15 @@ MODE_LABELS: dict[str, str] = {
 
 def _load_config() -> dict[str, str]:
     """Read [models] section from ~/.config/harness/config.toml."""
-    result: dict[str, str] = {}
     if not CONFIG_FILE.exists():
-        return result
-    in_models = False
-    for line in CONFIG_FILE.read_text().splitlines():
-        line = line.strip()
-        if line == "[models]":
-            in_models = True
-            continue
-        if line.startswith("["):
-            in_models = False
-        if in_models and "=" in line:
-            key, val = line.split("=", 1)
-            result[key.strip()] = val.strip().strip('"').strip("'")
-    return result
+        return {}
+    try:
+        data = tomllib.loads(CONFIG_FILE.read_text())
+    except tomllib.TOMLDecodeError as e:
+        print(f"{Y}Warning: invalid {CONFIG_FILE}: {e}{RST}", file=sys.stderr)
+        return {}
+    models = data.get("models", {})
+    return {k: str(v) for k, v in models.items()}
 
 
 def _resolve_model(mode: str, explicit: str | None, config: dict[str, str]) -> str:
@@ -259,14 +254,17 @@ def _extract_commands(text: str) -> list[str]:
 
 
 def _offer_run(cmds: list[str]) -> None:
-    if not cmds:
+    if not cmds or not sys.stdin.isatty():
         return
     print(f"{DIM}{'─' * 60}{RST}")
     print(f"{Y}The AI suggested {len(cmds)} command(s). Run them?{RST}\n")
     for i, cmd in enumerate(cmds, 1):
         print(f"  {C}[{i}]{RST} {cmd}")
     print()
-    ans = input(f"Enter number(s) to run, {G}a{RST}=all, {R}n{RST}=skip: ").strip().lower()
+    try:
+        ans = input(f"Enter number(s) to run, {G}a{RST}=all, {R}n{RST}=skip: ").strip().lower()
+    except EOFError:
+        return
     if ans == "n" or not ans:
         return
     selected = cmds if ans == "a" else [
@@ -370,6 +368,18 @@ def _logs_mode(model: str, log_file: str | None) -> None:
 
     _save_session(messages, "logs")
 
+# ── mode: one-shot ask ────────────────────────────────────────────────────────
+
+def _ask_once(model: str, mode: str, question: str) -> None:
+    """Answer a single question and exit — used by shell hooks (wtf, ask)."""
+    sys_prompt = _build_system_prompt(mode)
+    messages = [
+        {"role": "system", "content": sys_prompt},
+        {"role": "user",   "content": question},
+    ]
+    response = _stream_chat(model, messages)
+    _offer_run(_extract_commands(response))
+
 # ── interactive chat loop ─────────────────────────────────────────────────────
 
 def _chat_loop(model: str, mode: str) -> None:
@@ -431,6 +441,7 @@ upgrade models in ~/.config/harness/config.toml:
     p.add_argument("-m", "--model",   default=None,  help="Override Ollama model")
     p.add_argument("-e", "--explain", metavar="CMD", help="Explain a shell command and exit")
     p.add_argument("-f", "--file",    metavar="LOG", help="Log file to analyze (logs mode)")
+    p.add_argument("-q", "--ask",     metavar="Q",   help="Ask one question, print answer, exit")
     args = p.parse_args()
 
     mode = args.mode or "default"
@@ -441,6 +452,8 @@ upgrade models in ~/.config/harness/config.toml:
 
     if args.explain:
         _explain(model, args.explain)
+    elif args.ask:
+        _ask_once(model, mode, args.ask)
     elif mode == "commit":
         _commit_mode(model)
     elif mode == "logs":

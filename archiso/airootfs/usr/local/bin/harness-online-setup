@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
-# HarnessOS — Online setup: installs npm globals and gh extensions.
-# Runs once on first boot after network is available.
+# HarnessOS — Online setup: AUR helper, npm globals, AI brain wiring.
+# Runs once on first boot after network is available (live ISO AND
+# installed systems — the installer deploys and enables this unit).
 set -euo pipefail
 
 DONE_FILE="/var/lib/harness-online-setup-done"
 LOG_FILE="/var/log/harness-online-setup.log"
+PULL_LOG="/var/log/harness-model-pull.log"
 
 [[ -f "${DONE_FILE}" ]] && exit 0
 
 exec > >(tee -a "${LOG_FILE}") 2>&1
 
 echo ">>> HarnessOS online setup starting: $(date)"
+
+# The interactive user: 'harness' on the live ISO, whatever the installer
+# created (first uid-1000 account) on an installed system.
+MAIN_USER="$(id -nu 1000 2>/dev/null || echo harness)"
+echo ">>> Target user: ${MAIN_USER}"
 
 # Wait for internet (max 30s)
 for i in $(seq 1 30); do
@@ -27,11 +34,11 @@ fi
 # ---------------------------------------------------------------------------
 # yay (AUR helper) — not in official repos, must be built from source as a
 # regular user (makepkg refuses to run as root). This script runs as root
-# via systemd, so we drop to the 'harness' user for the build/install.
+# via systemd, so we drop to the main user for the build/install.
 # ---------------------------------------------------------------------------
 if ! command -v yay &>/dev/null; then
     echo ">>> Building yay (AUR helper)..."
-    runuser -u harness -- bash -c '
+    runuser -u "${MAIN_USER}" -- bash -c '
         set -e
         rm -rf /tmp/yay
         git clone https://aur.archlinux.org/yay.git /tmp/yay
@@ -56,12 +63,52 @@ npm install -g typescript ts-node tsx
 echo ">>> Installing OpenCode (AI coding agent)..."
 npm install -g opencode-ai
 
+echo ">>> Installing OpenClaw (AI assistant) [best effort]..."
+npm install -g openclaw || echo "  (openclaw install failed — skipping)"
+
 # ---------------------------------------------------------------------------
 # GitHub Copilot extension (requires gh to be present)
 # ---------------------------------------------------------------------------
 if command -v gh &>/dev/null; then
     echo ">>> Installing GitHub Copilot CLI extension..."
     gh extension install github/gh-copilot 2>/dev/null || true
+fi
+
+# ---------------------------------------------------------------------------
+# AI brain — tune model routing to this hardware and share system context
+# with every agent through harness-mcp.
+# ---------------------------------------------------------------------------
+echo ">>> Tuning AI models for this hardware..."
+runuser -u "${MAIN_USER}" -- /usr/local/bin/harness-tune-ai || true
+
+echo ">>> Registering harness-mcp with Claude Code..."
+runuser -u "${MAIN_USER}" -- claude mcp add --scope user harness -- /usr/local/bin/harness-mcp \
+    || echo "  (claude mcp add failed — register manually later)"
+# OpenCode picks up harness-mcp from ~/.config/opencode/opencode.json (dotfiles).
+
+echo ">>> Installing Continue extension for VS Code (Open VSX) [best effort]..."
+if command -v code &>/dev/null; then
+    runuser -u "${MAIN_USER}" -- code --install-extension Continue.continue --force \
+        || echo "  (Continue install failed — Open VSX unreachable?)"
+fi
+
+# ---------------------------------------------------------------------------
+# Pre-pull the Ollama models chosen by harness-tune-ai so the first
+# 'harness-ai' call doesn't stall on a multi-GB download.
+# NEVER on the live ISO: the airootfs is tmpfs, models would eat RAM.
+# Runs in background so first boot isn't held hostage by the download.
+# ---------------------------------------------------------------------------
+if [[ -d /run/archiso ]]; then
+    echo ">>> Live ISO detected — skipping model pre-pull (tmpfs)."
+else
+    MODELS="$(runuser -u "${MAIN_USER}" -- /usr/local/bin/harness-tune-ai --print-pull || true)"
+    if [[ -n "${MODELS}" ]]; then
+        systemctl start ollama.service || true
+        echo ">>> Pre-pulling models in background: ${MODELS} (log: ${PULL_LOG})"
+        nohup bash -c "for m in ${MODELS}; do ollama pull \"\${m}\"; done" \
+            >> "${PULL_LOG}" 2>&1 &
+        disown
+    fi
 fi
 
 touch "${DONE_FILE}"

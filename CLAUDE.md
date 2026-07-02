@@ -52,6 +52,15 @@ Repository: https://github.com/Codigo-Free/HarnessOS
 - `code` (archiso/packages.x86_64) is Arch's OSS build of VS Code — no Microsoft Marketplace access (license restricts it to official MS builds). Extensions panel shows nothing. Fix on an installed system: AUR `visual-studio-code-bin`, or point `product.json` `extensionsGallery` at Open VSX.
 - `yay` (AUR helper) can't go in `archiso/packages.x86_64` (not an official repo pkg, and `makepkg` refuses to run as root during the offline chroot build). Instead it's built as the `harness` user in `harness-online-setup` (`archiso/airootfs/usr/local/bin/harness-online-setup`) on first boot with internet.
 
+## IA local — arquitectura de "cerebro" del sistema (2026-07-02)
+Ollama es el backend único; una config central + un servidor MCP conectan todas las herramientas:
+- **`~/.config/harness/config.toml` `[models]`** — tabla de ruteo de modelos única. La escribe `harness-tune-ai` (detecta VRAM/RAM y elige tier low/base/mid/high); la leen `harness-ai` y quien quiera. `--print-pull` devuelve los modelos a pre-descargar.
+- **`harness-mcp`** — servidor MCP (JSON-RPC/stdio, solo stdlib, herramientas **read-only**: journal, systemctl status, pacman, docker ps, ollama models, system overview). Registrado en Claude Code (`claude mcp add --scope user`) por `harness-online-setup`; OpenCode lo carga desde `~/.config/opencode/opencode.json`.
+- **`harness-ai -q "pregunta"`** — modo one-shot (para scripts/hooks). El shell lo usa: `wtf` (diagnostica el último comando fallido), `ask <pregunta>`, y `Ctrl+X Ctrl+A` (explica la línea escrita sin perderla). Bloque al final de ambos `.zshrc` (dotfiles/zsh y airootfs/home/harness — **están divergidos, editar los dos**).
+- **`harness-online-setup`** ya NO es solo-live: el instalador copia y habilita la unit (symlink en `deploy_cli_tools()`), detecta al usuario real (uid 1000, no `harness` hardcodeado), corre `harness-tune-ai`, y pre-descarga los modelos tuneados en background — **nunca en live ISO** (`/run/archiso` ⇒ tmpfs, se comería la RAM). También instala `openclaw` y la extensión Continue (Open VSX) best-effort.
+- **Editores**: OpenCode → `dotfiles/opencode/` (provider ollama vía `@ai-sdk/openai-compatible` + MCP); VS Code → Continue en `dotfiles/continue/.continue/config.yaml` (modelo `AUTODETECT` contra Ollama). Ambos duplicados en `archiso/airootfs/home/harness/` y añadidos a `LIVE_CONFIGS` en `dotfiles.py`.
+- `checkupdates` (herramienta del MCP `pacman updates`) requiere `pacman-contrib` — ya en `packages.x86_64`.
+
 ## Workflow
 **Desde máquina normal (Linux, Mac, etc. con Docker):**
 1. Edit files in this repo

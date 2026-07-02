@@ -1,0 +1,30 @@
+# HarnessOS — Continue (VS Code) preconfigured against the local Ollama brain.
+# AUTODETECT exposes every model pulled locally; manage them with
+# `ollama pull` or let harness-tune-ai pick the right tier for this machine.
+name: HarnessOS Local
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Ollama (local)
+    provider: ollama
+    model: AUTODETECT
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: Qwen2.5 Coder autocomplete
+    provider: ollama
+    model: qwen2.5-coder:3b
+    roles:
+      - autocomplete
+
+context:
+  - provider: file
+  - provider: code
+  - provider: diff
+  - provider: terminal
+  - provider: problems
+  - provider: folder
+  - provider: codebase

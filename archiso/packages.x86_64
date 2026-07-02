@@ -38,6 +38,7 @@ dosfstools
 e2fsprogs
 ntfs-3g
 gptfdisk
+pacman-contrib
 parted
 util-linux
 

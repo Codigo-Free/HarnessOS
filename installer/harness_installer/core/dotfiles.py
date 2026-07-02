@@ -10,6 +10,9 @@ LIVE_CONFIGS = [
     ".config/waybar",
     ".config/kitty",
     ".config/wofi",
+    ".config/opencode",   # OpenCode → local Ollama + harness-mcp
+    ".config/harness",    # model routing written by harness-tune-ai (if it ran)
+    ".continue",          # Continue (VS Code) → local Ollama
     ".zshrc",
     ".zprofile",
 ]
@@ -86,3 +89,20 @@ def deploy_cli_tools(mountpoint: str) -> None:
         if dst.exists():
             shutil.rmtree(dst)
         shutil.copytree(src, dst)
+
+    # harness-online-setup.service only exists via the ISO's airootfs
+    # overlay, so without copying + enabling it here the installed system
+    # never gets Claude Code, OpenCode, yay, the tuned AI models or the
+    # harness-mcp registration — none of that is in any pacman package.
+    # Enable = wants-symlink; systemctl isn't usable against a mountpoint
+    # this early and the unit's ConditionPathExists guards re-runs.
+    unit_src = Path("/etc/systemd/system/harness-online-setup.service")
+    if unit_src.exists():
+        unit_dst = mp / "etc" / "systemd" / "system" / unit_src.name
+        unit_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(unit_src, unit_dst)
+        wants = mp / "etc" / "systemd" / "system" / "multi-user.target.wants"
+        wants.mkdir(parents=True, exist_ok=True)
+        link = wants / unit_src.name
+        if not link.is_symlink():
+            link.symlink_to(f"/etc/systemd/system/{unit_src.name}")
