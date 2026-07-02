@@ -4,7 +4,7 @@
 
 [![Build ISO](https://github.com/Codigo-Free/HarnessOS/actions/workflows/build-iso.yml/badge.svg)](https://github.com/Codigo-Free/HarnessOS/actions/workflows/build-iso.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Codigo-Free/HarnessOS)](https://github.com/Codigo-Free/HarnessOS/releases)
-[![ISO Size](https://img.shields.io/badge/ISO-3.0%20GB-blue)](http://148.113.174.52:8899/harnessOS-2026.06.23-x86_64.iso)
+[![ISO Size](https://img.shields.io/badge/ISO-3.3%20GB-blue)](http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso)
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPL--2.0-blue.svg)](LICENSE)
 
 Boot into a complete AI development environment in minutes. Claude CLI, Ollama, Docker, Hyprland, and 40+ dev tools — configured, themed, and ready. No manual setup required.
@@ -53,18 +53,18 @@ You spend days setting up a new machine. Installing packages, configuring dotfil
 
 | Version | Date | Size | Link |
 |---------|------|------|------|
-| **v2026.06.24** (latest) | 2026-06-24 | 3.0 GB | [harnessOS-2026.06.24-x86_64.iso](http://148.113.174.52:8899/harnessOS-2026.06.24-x86_64.iso) |
+| **v2026.07.02** (latest) | 2026-07-02 | 3.3 GB | [harnessOS-2026.07.02-x86_64.iso](http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso) |
 
 ```bash
 # Download
-wget http://148.113.174.52:8899/harnessOS-2026.06.24-x86_64.iso
+wget http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso
 
 # Verify checksum
-wget http://148.113.174.52:8899/harnessOS-2026.06.24-x86_64.iso.sha256
-sha256sum -c harnessOS-2026.06.24-x86_64.iso.sha256
+wget http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso.sha256
+sha256sum -c harnessOS-2026.07.02-x86_64.iso.sha256
 
 # Flash to USB
-sudo dd if=harnessOS-2026.06.24-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
+sudo dd if=harnessOS-2026.07.02-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
 ```
 
 > The ISO boots straight to Hyprland. Run `harness-install` from the terminal to install to disk.
