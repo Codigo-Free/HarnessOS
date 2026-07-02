@@ -84,11 +84,23 @@ def _detect_ram_mib() -> int:
     return 0
 
 
+# Reasoning models (deepseek-r1) emit a long chain of thought before the
+# answer — fine on a GPU, but on CPU-only machines a single 'wtf' takes
+# 6+ minutes. Without a dedicated GPU, interactive diagnosis modes get a
+# fast non-reasoning model instead.
+CPU_ONLY_OVERRIDES = {"doctor": "llama3.2", "logs": "llama3.2"}
+
+
 def _pick_tier(vram: int, ram: int) -> tuple[str, dict[str, str]]:
     for name, min_vram, min_ram, models in TIERS:
         if (min_vram and vram >= min_vram) or (min_ram and ram >= min_ram):
-            return name, models
-    return TIERS[-1][0], TIERS[-1][3]
+            break
+    else:
+        name, models = TIERS[-1][0], TIERS[-1][3]
+    if vram < 5_000:
+        models = {**models, **CPU_ONLY_OVERRIDES}
+        name += "+cpu"
+    return name, models
 
 
 def main() -> None:

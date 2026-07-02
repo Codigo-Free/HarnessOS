@@ -164,7 +164,8 @@ if command -v harness-ai &>/dev/null; then
     autoload -Uz add-zsh-hook
     typeset -g _harness_last_cmd='' _harness_last_status=0
 
-    _harness_ai_preexec() { _harness_last_cmd="$1"; }
+    # Never record wtf itself, or it would overwrite the command it must diagnose
+    _harness_ai_preexec() { [[ "$1" == wtf || "$1" == wtf\ * ]] || _harness_last_cmd="$1"; }
     _harness_ai_precmd() {
         local st=$?
         [[ -n "$_harness_last_cmd" ]] || return 0
