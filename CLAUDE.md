@@ -21,6 +21,7 @@ Repository: https://github.com/Codigo-Free/HarnessOS
 - **`systemd-vconsole-setup.service` falla** (`setfont` exit 66) si falta el paquete `terminus-font` (usado por `FONT=ter-v18n` en `/etc/vconsole.conf`) — es uno de los paquetes que quedan fuera si pacstrap se corta a la mitad.
 - **`/boot` world-readable**: con `fmask=0022,dmask=0022` en fstab, `bootctl` marca `random-seed` como agujero de seguridad. Fix: `fmask=0137,dmask=0027`.
 - **USB drives no aparecen/montan solos**: el kernel y udisks2 detectan el dispositivo perfectamente (confirmado con `lsblk`/`journalctl -k` — aparece como `sdX` al instante), pero como Hyprland no trae un entorno de escritorio completo, no había ningún automounter corriendo. `udiskie` ya viene en `archiso/packages.x86_64` pero le faltaba el `exec-once` en `hyprland.conf`. Fix: agregado `exec-once = udiskie -t`.
+- **Ícono de Ollama invisible en Waybar**: `harness-ollama-status` armaba el tooltip con un `printf` cuyo formato tenía un `\n` sin escapar (`'...%s\nClick to chat...'`), lo que `printf` convierte en un salto de línea real dentro del string JSON — JSON inválido, Waybar tira `Error parsing JSON` y el módulo queda en blanco. Fix: escapar como `\\n` en el formato.
 
 ## Key Technical Decisions
 - **Kernel**: `linux-zen` (lower desktop latency vs mainline)
