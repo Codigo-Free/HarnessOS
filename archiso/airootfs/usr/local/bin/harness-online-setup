@@ -25,6 +25,23 @@ if ! ping -c1 -W1 archlinux.org &>/dev/null; then
 fi
 
 # ---------------------------------------------------------------------------
+# yay (AUR helper) — not in official repos, must be built from source as a
+# regular user (makepkg refuses to run as root). This script runs as root
+# via systemd, so we drop to the 'harness' user for the build/install.
+# ---------------------------------------------------------------------------
+if ! command -v yay &>/dev/null; then
+    echo ">>> Building yay (AUR helper)..."
+    runuser -u harness -- bash -c '
+        set -e
+        rm -rf /tmp/yay
+        git clone https://aur.archlinux.org/yay.git /tmp/yay
+        cd /tmp/yay
+        makepkg -si --noconfirm
+    '
+    rm -rf /tmp/yay
+fi
+
+# ---------------------------------------------------------------------------
 # npm global tools
 # ---------------------------------------------------------------------------
 echo ">>> Installing Claude Code CLI..."

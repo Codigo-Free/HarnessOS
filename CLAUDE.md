@@ -47,6 +47,8 @@ Repository: https://github.com/Codigo-Free/HarnessOS
 - TypeScript: `npm install -g typescript ts-node tsx`
 - Ollama: in official Arch repo as `ollama`
 - Models NOT pre-baked in ISO (too large) — first run: `ollama pull llama3.2`
+- `code` (archiso/packages.x86_64) is Arch's OSS build of VS Code — no Microsoft Marketplace access (license restricts it to official MS builds). Extensions panel shows nothing. Fix on an installed system: AUR `visual-studio-code-bin`, or point `product.json` `extensionsGallery` at Open VSX.
+- `yay` (AUR helper) can't go in `archiso/packages.x86_64` (not an official repo pkg, and `makepkg` refuses to run as root during the offline chroot build). Instead it's built as the `harness` user in `harness-online-setup` (`archiso/airootfs/usr/local/bin/harness-online-setup`) on first boot with internet.
 
 ## Workflow
 **Desde máquina normal (Linux, Mac, etc. con Docker):**
