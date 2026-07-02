@@ -20,6 +20,7 @@ Repository: https://github.com/Codigo-Free/HarnessOS
 - **NVIDIA — nunca instalar `nvidia-open-dkms` manualmente**: GPUs pre-Turing (Maxwell/Pascal, sin GSP) no son soportadas por los módulos open-source y el kernel falla el probe (`probe with driver nvidia failed with error -1`). Usar siempre `nvidia-dkms`, como ya hace `gpu.py`.
 - **`systemd-vconsole-setup.service` falla** (`setfont` exit 66) si falta el paquete `terminus-font` (usado por `FONT=ter-v18n` en `/etc/vconsole.conf`) — es uno de los paquetes que quedan fuera si pacstrap se corta a la mitad.
 - **`/boot` world-readable**: con `fmask=0022,dmask=0022` en fstab, `bootctl` marca `random-seed` como agujero de seguridad. Fix: `fmask=0137,dmask=0027`.
+- **USB drives no aparecen/montan solos**: el kernel y udisks2 detectan el dispositivo perfectamente (confirmado con `lsblk`/`journalctl -k` — aparece como `sdX` al instante), pero como Hyprland no trae un entorno de escritorio completo, no había ningún automounter corriendo. `udiskie` ya viene en `archiso/packages.x86_64` pero le faltaba el `exec-once` en `hyprland.conf`. Fix: agregado `exec-once = udiskie -t`.
 
 ## Key Technical Decisions
 - **Kernel**: `linux-zen` (lower desktop latency vs mainline)
