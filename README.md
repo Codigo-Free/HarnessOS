@@ -26,7 +26,7 @@ Boot into a complete AI development environment in minutes. Claude CLI, Ollama, 
 *Split view — terminal alongside Firefox, all running in Hyprland*
 
 ![Easter egg](docs/screenshots/easter-egg.jpg)
-*`SUPER+SHIFT+CTRL+G` — hidden Galaga game (Tokyo Night palette)*
+*Hidden Galaga game (Tokyo Night palette) — find the keybind yourself*
 
 ---
 
