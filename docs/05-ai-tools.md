@@ -71,6 +71,62 @@ model = "llama3.2"
 
 ---
 
+## The local AI brain (v2026.07.02.1)
+
+Since v2026.07.02.1, Ollama is wired into the whole system as a single local brain: one model-routing config, one system-context server, every tool connected. Everything runs locally — no API key, no cost, nothing leaves your machine.
+
+### Shell AI — wtf, ask, Ctrl+X Ctrl+A
+
+| Command | What it does |
+|---------|--------------|
+| `wtf` | Diagnoses the **last failed command** — sends the exact command, its exit code and live system context to the local model |
+| `ask "question"` | One-shot answer with real system context (kernel, services, disk, recent commands) |
+| `Ctrl+X Ctrl+A` | Explains the command currently typed at the prompt (risks included) without losing your input |
+
+When a command fails with a "real" error (exit code > 1), the shell prints a hint:
+
+```
+❯ systemctl statuss ollama
+Unknown command verb 'statuss', did you mean 'status'?
+↯ exit 2 — escribe 'wtf' para diagnóstico con IA
+❯ wtf
+```
+
+If the answer contains commands, you get an approval menu (`[1] [2] a=all n=skip`) before anything runs.
+
+### Hardware-tuned models — harness-tune-ai
+
+On first boot, `harness-tune-ai` detects GPU VRAM and system RAM and writes the optimal model tier to `~/.config/harness/config.toml`:
+
+| Tier | Hardware | Example models |
+|------|----------|----------------|
+| high | ≥ 20 GB VRAM | qwen3:27b, deepseek-r1:14b |
+| mid | ≥ 10 GB VRAM | qwen2.5-coder:14b |
+| base | ≥ 5 GB VRAM / ≥ 14 GB RAM | qwen2.5-coder:7b, llama3.2 |
+| low | anything else | qwen2.5-coder:3b, llama3.2 |
+
+Machines without a dedicated GPU get a `+cpu` variant: interactive diagnosis modes (`doctor`, `logs`) use fast non-reasoning models — a chain-of-thought model on CPU takes 6+ minutes per answer. The chosen models are pre-pulled in the background so the first `wtf` doesn't stall on a download. Re-run after a hardware change: `harness-tune-ai --force`.
+
+### System MCP server — harness-mcp
+
+`/usr/local/bin/harness-mcp` is a zero-dependency MCP (Model Context Protocol) server that exposes **read-only** system tools to any AI agent:
+
+| Tool | What the agent sees |
+|------|---------------------|
+| `system_overview` | kernel, uptime, memory, disk, failed units, GPU |
+| `journal` | systemd journal (filter by unit, errors only, current boot) |
+| `service_status` | full `systemctl status` of one unit |
+| `pacman` | package info, file ownership, orphans, pending updates |
+| `docker_ps` | containers and their state |
+| `ollama_models` | local models + the routing config |
+
+Claude Code gets it registered automatically on first boot (`claude mcp add --scope user harness`); OpenCode loads it from `~/.config/opencode/opencode.json`. Any other MCP client can use it: `command = /usr/local/bin/harness-mcp`. Since every tool is read-only, agents can *see* the machine but any mutation still goes through your normal command approval.
+
+### Editors, preconfigured
+
+- **OpenCode** (`opencode`) — ships with the local Ollama provider (llama3.2, qwen2.5-coder, deepseek-r1) and `harness-mcp` already configured. Just `cd` into a project and run `opencode`, then pick a model with `/models`.
+- **VS Code + Continue** — the Continue extension (installed from Open VSX on first boot) auto-detects every local Ollama model for chat, edit and autocomplete.
+
 ## Claude CLI
 
 Claude Code is Anthropic's official CLI for the Claude AI assistant. It provides an interactive terminal interface for AI-assisted coding.

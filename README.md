@@ -39,6 +39,9 @@ You spend days setting up a new machine. Installing packages, configuring dotfil
 | Claude CLI (AI pair programmer) | First boot | Manual | Manual | Manual |
 | Ollama + local LLM | First boot | Manual | Manual | Manual |
 | System-aware AI (`harness ai`) | Built-in | — | — | — |
+| Shell AI (`wtf`, `ask`) | Built-in | — | — | — |
+| Hardware-tuned local models | First boot | Manual | Manual | Manual |
+| System MCP server for AI agents | Built-in | — | — | — |
 | Hyprland tiling Wayland | Pre-configured | DIY | Optional | — |
 | TUI tools (lazygit, k9s, yazi...) | Pre-installed | Manual | Manual | Manual |
 | BTRFS + auto-snapshots | Default | Manual | Manual | — |
@@ -53,7 +56,7 @@ You spend days setting up a new machine. Installing packages, configuring dotfil
 
 | Version | Date | Size | Link |
 |---------|------|------|------|
-| **v2026.07.02** (latest) | 2026-07-02 | 3.3 GB | [harnessOS-2026.07.02-x86_64.iso](http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso) |
+| **v2026.07.02.1** (latest) | 2026-07-02 | 3.3 GB | [harnessOS-2026.07.02-x86_64.iso](http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso) |
 
 ```bash
 # Download
@@ -152,6 +155,35 @@ You: why is docker failing to start?
 
 ---
 
+## The Local AI Brain
+
+Since v2026.07.02.1, Ollama is wired into the whole system as a single local brain: one model-routing config, one system-context server, every tool connected. 100% local — no API key, no cost, nothing leaves your machine.
+
+### Shell AI
+
+| Command | What it does |
+|---------|--------------|
+| `wtf` | Diagnoses the last failed command — exit code and live system context included |
+| `ask "question"` | One-shot answer with real system context |
+| `Ctrl+X Ctrl+A` | Explains the command typed at the prompt, without losing your input |
+
+When a command fails, the shell hints: `↯ exit 127 — escribe 'wtf' para diagnóstico con IA`.
+
+### Hardware-tuned models — `harness-tune-ai`
+
+On first boot, HarnessOS detects GPU VRAM and RAM, then writes the optimal model tier to `~/.config/harness/config.toml` — from `qwen2.5-coder:3b` on modest laptops to `qwen3:27b` on big GPUs. CPU-only machines automatically avoid slow reasoning models for interactive diagnosis. The chosen models are pre-pulled in the background so the first `wtf` doesn't stall on a download.
+
+### System MCP server — `harness-mcp`
+
+A zero-dependency MCP server exposes **read-only** system tools — journal, service status, pacman, docker, local Ollama models — to any AI agent. Claude Code gets it registered automatically on first boot; OpenCode loads it from its config. Your agents see the real machine; anything that *mutates* the system still goes through your approval.
+
+### Editors, preconfigured
+
+- **OpenCode** (`opencode`) — local Ollama provider + `harness-mcp`, zero config
+- **VS Code + Continue** — auto-detects every local Ollama model (installed from Open VSX on first boot)
+
+---
+
 ## What Ships Pre-installed
 
 ### AI Tools
@@ -159,8 +191,12 @@ You: why is docker failing to start?
 | Tool | Command | Notes |
 |------|---------|-------|
 | harness ai | `harness ai` | System-aware chat — sees kernel, services, Docker, history |
-| Claude CLI | `claude` | AI pair programmer by Anthropic |
-| Ollama | `ollama` | Run LLMs locally (llama3.2, mistral, codestral…) |
+| Shell AI | `wtf`, `ask` | Diagnose the last failure / ask with system context |
+| Claude CLI | `claude` | AI pair programmer by Anthropic — `harness-mcp` preconnected |
+| OpenCode | `opencode` | AI coding agent — preconfigured for local Ollama + `harness-mcp` |
+| Continue | VS Code | Chat/edit/autocomplete against local Ollama (auto-detect) |
+| Ollama | `ollama` | Run LLMs locally — models auto-tuned to your hardware |
+| harness-mcp | `harness-mcp` | System-context MCP server for any AI agent (read-only) |
 | GitHub Copilot | `gh copilot` | Copilot from the terminal |
 
 ### Desktop

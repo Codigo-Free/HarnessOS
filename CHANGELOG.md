@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [2026.07.02.1] - 2026-07-02
+
+### Added
+
+**Local AI brain — Ollama wired into the whole system**
+- `harness-tune-ai` — detects GPU VRAM / RAM on first boot and writes the optimal model tier (low/base/mid/high) to `~/.config/harness/config.toml`; chosen models are pre-pulled in the background
+- `harness-mcp` — zero-dependency MCP server exposing read-only system tools (journal, service status, pacman, docker, Ollama models) to Claude Code, OpenCode and any MCP client; registered automatically on first boot
+- Shell AI integration: `wtf` (diagnose the last failed command), `ask <question>` (one-shot with system context), `Ctrl+X Ctrl+A` (explain the typed command), and a hint on real failures
+- `harness-ai -q/--ask` — one-shot mode for scripts and hooks; config parsing via `tomllib`
+- OpenCode preconfigured with the local Ollama provider + `harness-mcp`; Continue (VS Code) preconfigured with model auto-detect, installed from Open VSX on first boot
+- `harness-online-setup` now also installs OpenClaw (best effort) and runs on installed systems, not just the live ISO
+- `scripts/sync-system.sh` — sync an installed system with the repo in one command
+- `pacman-contrib` in the ISO (provides `checkupdates` for `harness-mcp`)
+
+### Fixed
+- Installed systems never received the npm globals (Claude Code, OpenCode, yay): the installer now deploys and enables `harness-online-setup.service`
+- `wtf` diagnosed itself instead of the failed command (preexec recorded the `wtf` line)
+- CPU-only machines got 6-minute diagnoses from reasoning models: doctor/logs modes now use fast models when no dedicated GPU is present
+
 ## [2026.06.24] - 2026-06-24
 
 ### Added
