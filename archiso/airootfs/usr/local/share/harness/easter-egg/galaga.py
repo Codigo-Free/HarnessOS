@@ -439,10 +439,12 @@ def run_game(surface, clock, stars, fonts, wave=1, score=0, lives=3):
         alive_form = [e for e in enemies if e.alive and not e.swooping]
         if alive_form:
             xs = [e.home_x + fm_dx for e in alive_form]
-            if max(xs) >= W - 55:
+            # Drop only on the frame the direction flips — otherwise the
+            # formation drops 22px on every frame it hugs the edge
+            if max(xs) >= W - 55 and fm_dir == 1:
                 fm_dir  = -1
                 fm_dy  += fm_drop
-            if min(xs) <= 55:
+            elif min(xs) <= 55 and fm_dir == -1:
                 fm_dir  = 1
                 fm_dy  += fm_drop
         fm_dx += fm_spd * fm_dir
@@ -476,8 +478,10 @@ def run_game(surface, clock, stars, fonts, wave=1, score=0, lives=3):
                         explosions.append({'x': int(player.x), 'y': int(player.y),
                                            'r': 4.0, 'max': 50.0, 'color': GREEN})
 
+        # Formation reaching the bottom ends the game — but swooping enemies
+        # dive past the player and rejoin the formation, like in real Galaga
         for e in enemies:
-            if e.alive and e.y > H - 50:
+            if e.alive and not e.swooping and e.y > H - 50:
                 player.lives = 0
 
         if player.lives <= 0:

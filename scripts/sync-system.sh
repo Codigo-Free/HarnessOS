@@ -23,6 +23,15 @@ fi
 echo ">>> Syncing harness-* CLI toolkit → /usr/local/bin"
 install -m755 "${AIROOTFS}"/usr/local/bin/harness* /usr/local/bin/
 
+# lib (installer copy) and share (easter egg, profiles) live outside bin
+for name in lib share; do
+    src="${AIROOTFS}/usr/local/${name}/harness"
+    [[ -d "${src}" ]] || continue
+    echo ">>> Syncing ${src#${AIROOTFS}}"
+    mkdir -p "/usr/local/${name}/harness"
+    cp -r "${src}/." "/usr/local/${name}/harness/"
+done
+
 echo ">>> Syncing branding → /usr/share/harness"
 if [[ -d "${AIROOTFS}/usr/share/harness" ]]; then
     mkdir -p /usr/share/harness
