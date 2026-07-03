@@ -121,10 +121,13 @@ class Enemy:
             self.x = self.home_x + fm_dx
             self.y = self.home_y + fm_dy
 
+        # Dead enemies are still updated so their in-flight bullets keep
+        # moving — but they must not fire new ones
         self.shoot_cd -= 1
         if self.shoot_cd <= 0:
             self.shoot_cd = random.randint(200, 600)
-            self.bullets.append(Bullet(int(self.x), int(self.y) + 12, bullet_speed, RED))
+            if self.alive:
+                self.bullets.append(Bullet(int(self.x), int(self.y) + 12, bullet_speed, RED))
 
         for b in self.bullets[:]:
             b.update()
