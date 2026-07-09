@@ -1,68 +1,142 @@
-# HarnessOS
+<div align="center">
 
-**Arch Linux re-imagined for AI-powered software development.**
+# ⬡ HarnessOS
+
+### The AI-native operating system for software developers.
+
+AI is not an app you install on HarnessOS.
+It is part of the operating system.
 
 [![Build ISO](https://github.com/Codigo-Free/HarnessOS/actions/workflows/build-iso.yml/badge.svg)](https://github.com/Codigo-Free/HarnessOS/actions/workflows/build-iso.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Codigo-Free/HarnessOS)](https://github.com/Codigo-Free/HarnessOS/releases)
-[![ISO Size](https://img.shields.io/badge/ISO-3.3%20GB-blue)](http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso)
+[![ISO](https://img.shields.io/badge/ISO-3.3%20GB-blue)](http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso)
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPL--2.0-blue.svg)](LICENSE)
 
-Boot into a complete AI development environment in minutes. Claude CLI, Ollama, Docker, Hyprland, and 40+ dev tools — configured, themed, and ready. No manual setup required.
+**Arch Linux** · **linux-zen** · **Hyprland (Wayland)** · **Ollama** · **Claude CLI** · **Docker** · **BTRFS**
+
+No configuration. No dotfiles. No setup.
+**Just build.**
+
+[Download](#quick-install) · [Why HarnessOS](#why-harnessos) · [Architecture](#architecture) · [Roadmap](#roadmap)
+
+<br>
+
+![HarnessOS Desktop](docs/screenshots/wallpaper.jpg)
+
+</div>
 
 ---
 
-## Screenshots
+## Why HarnessOS
 
-![HarnessOS Wallpaper](docs/screenshots/wallpaper.jpg)
-*HarnessOS — desktop with Waybar and logo wallpaper*
+You buy a new laptop. You're excited to build.
 
-![harness ai in action](docs/screenshots/harness-ai.png)
-*`harness ai` — pulls llama3.2 on first run and starts a context-aware AI session*
+Two days later you're still at it: installing packages, copying dotfiles from your old machine, fighting the NVIDIA driver, configuring the compositor, authenticating six CLI tools, wiring your editor to an LLM.
 
-![harness ai split](docs/screenshots/harness-ai-split.jpg)
-*`harness ai` split pane — two concurrent AI conversations running side by side*
+That's not development. That's overhead.
 
-![HarnessOS split view](docs/screenshots/desktop-split.png)
-*Split view — terminal alongside Firefox, all running in Hyprland*
+**HarnessOS boots straight into a finished developer workstation.** Terminal, editor, containers, local AI, cloud AI — configured, themed, and talking to each other from the first minute. And because the AI lives *inside* the OS, it doesn't just answer questions. It sees your machine.
 
-![Easter egg](docs/screenshots/easter-egg.jpg)
-*Hidden Galaga game (Tokyo Night palette) — find the keybind yourself*
-
----
-
-## Why HarnessOS?
-
-You spend days setting up a new machine. Installing packages, configuring dotfiles, authenticating CLI tools, tuning the compositor. HarnessOS eliminates that entirely — everything is pre-configured and ready on first boot.
-
-| | HarnessOS | Arch Linux | EndeavourOS | Ubuntu |
-|--|:---------:|:----------:|:-----------:|:------:|
-| Claude CLI (AI pair programmer) | First boot | Manual | Manual | Manual |
-| Ollama + local LLM | First boot | Manual | Manual | Manual |
-| System-aware AI (`harness ai`) | Built-in | — | — | — |
-| Shell AI (`wtf`, `ask`) | Built-in | — | — | — |
-| Hardware-tuned local models | First boot | Manual | Manual | Manual |
-| System MCP server for AI agents | Built-in | — | — | — |
-| Hyprland tiling Wayland | Pre-configured | DIY | Optional | — |
-| TUI tools (lazygit, k9s, yazi...) | Pre-installed | Manual | Manual | Manual |
-| BTRFS + auto-snapshots | Default | Manual | Manual | — |
-| linux-zen kernel | Default | Optional | Optional | — |
-| Developer profiles | `harness install` | — | — | — |
-| NVIDIA (linux-zen safe) | Auto-detected | Manual | Manual | Manual |
-| TUI installer | Yes | `archinstall` | Yes | Yes |
+| | **HarnessOS** | Arch | EndeavourOS | Ubuntu |
+|--|:---:|:---:|:---:|:---:|
+| System-aware AI in the shell | **Built-in** | — | — | — |
+| Local LLMs tuned to your hardware | **First boot** | Manual | Manual | Manual |
+| MCP server for AI agents | **Built-in** | — | — | — |
+| Claude CLI + OpenCode + Continue | **First boot** | Manual | Manual | Manual |
+| Hyprland tiling Wayland desktop | **Pre-configured** | DIY | Optional | — |
+| BTRFS + automatic snapshots | **Default** | Manual | Manual | — |
+| GPU driver detection (zen-safe) | **Automatic** | Manual | Manual | Manual |
 
 ---
 
-## Download
+## Quick Demo
 
-| Version | Date | Size | Link |
-|---------|------|------|------|
-| **v2026.07.02.1** (latest) | 2026-07-02 | 3.3 GB | [harnessOS-2026.07.02-x86_64.iso](http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso) |
+<!-- TODO: record demo — wtf diagnosing a failed command, harness ai fixing docker -->
+![HarnessOS demo](docs/screenshots/demo.gif)
+
+```
+❯ systemctl statuss ollama
+Unknown command verb 'statuss'
+↯ exit 2 — type 'wtf' for AI diagnosis
+
+❯ wtf
+  Typo: `statuss` → `status`. The service itself is healthy —
+  ollama.service has been running for 2h 14m.
+
+    [1]  systemctl status ollama
+
+  Run it? [1/a/n] >
+```
+
+---
+
+## Features
+
+### 🤖 AI-Native
+
+- `wtf` — diagnoses your last failed command with full system context
+- `ask "..."` — one-shot answers that know your kernel, services and disks
+- `Ctrl+X Ctrl+A` — explains the command at your prompt before you run it
+- `harness ai` — chat with an AI that sees your machine, not a generic bot
+- Local models auto-tuned to your GPU/RAM on first boot — zero API cost, zero data leaves your machine
+
+### ⚙️ Developer-Ready
+
+- Claude CLI, OpenCode, Continue and GitHub Copilot CLI installed on first boot
+- Python, Node.js, TypeScript, Java, .NET, PHP, Docker + Compose, kubectl
+- Curated TUI stack: lazygit, lazydocker, yazi, k9s, lnav, bottom, fzf, zoxide
+- One-command stacks: `harness install web | ml | devops | security`
+
+### 🖥️ Desktop
+
+- Hyprland tiling Wayland compositor, GPU-rendered, Tokyo Night theme
+- Waybar with live Ollama status · Kitty terminal · Wofi launcher
+- `SUPER+Return` terminal · `SUPER+A` AI · `SUPER+E` VS Code · `SUPER+B` browser
+
+### 🛡️ Reliability
+
+- BTRFS subvolumes with automatic pre/post-transaction snapshots (snapper + snap-pac)
+- `harness update` — snapshot before, verify after; roll back in one command
+- linux-zen kernel with always-correct NVIDIA driver selection (`nvidia-dkms`)
+- A hidden arcade game. Somewhere.
+
+---
+
+## Architecture
+
+Every AI tool on the system shares one local brain — one model routing table, one context server, one Ollama backend.
+
+```
+       harness ai · wtf · ask │ Claude Code · OpenCode · Continue
+                    └──────────────┬───┬──────────────┘
+                          prompts  │   │  tools (MCP)
+                                   ▼   ▼
+              ┌────────────────────┐   ┌────────────────────┐
+              │   Model routing    │   │    harness-mcp     │
+              │ ~/.config/harness/ │   │ read-only system   │
+              │    config.toml     │   │   context server   │
+              │ (harness-tune-ai)  │   │                    │
+              └─────────┬──────────┘   └─────────┬──────────┘
+                        ▼                        ▼
+              ┌────────────────────┐   ┌────────────────────┐
+              │       Ollama       │   │  Live system state │
+              │  local LLMs sized  │   │ journal · services │
+              │  to your hardware  │   │ pacman · Docker    │
+              └────────────────────┘   │ GPU · shell history│
+                                       └────────────────────┘
+```
+
+- **`harness-tune-ai`** detects VRAM/RAM on first boot and picks the right model tier — `qwen2.5-coder:3b` on a modest laptop, `qwen3:27b` on a big GPU. CPU-only machines get fast non-reasoning models for interactive diagnosis. Models are pre-pulled in the background.
+- **`harness-mcp`** is a zero-dependency MCP server exposing journal, services, pacman, Docker and Ollama state to any AI agent. Read-only by design — agents can *see* everything, but every mutation still needs your approval.
+- Change one file, and every tool follows. One brain, many hands.
+
+---
+
+## Quick Install
 
 ```bash
-# Download
+# Download & verify
 wget http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso
-
-# Verify checksum
 wget http://148.113.174.52:8899/harnessOS-2026.07.02-x86_64.iso.sha256
 sha256sum -c harnessOS-2026.07.02-x86_64.iso.sha256
 
@@ -70,274 +144,152 @@ sha256sum -c harnessOS-2026.07.02-x86_64.iso.sha256
 sudo dd if=harnessOS-2026.07.02-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
 ```
 
-> The ISO boots straight to Hyprland. Run `harness-install` from the terminal to install to disk.
-
----
-
-## Quick Install
+> The ISO boots straight into the Hyprland desktop. Latest release: **v2026.07.02.1**.
 
 ```bash
-# 1. Boot from USB → open terminal (Super+Return)
-harness-install          # TUI wizard: disk, user, GPU, software
-
-# 2. After reboot
-harness setup            # authenticate Claude, GitHub, pull Ollama model
-harness doctor           # verify GPU, Docker, Ollama, Claude CLI
-
-# 3. Start working
-harness ai               # AI that knows your system
-claude                   # AI pair programmer
-code .                   # VS Code
+harness-install   # TUI wizard: disk, user, GPU, software — ~10 minutes
 ```
 
-The installer handles: BTRFS partitioning + subvolumes, GPU driver detection, dotfile deployment, and systemd-boot setup. Takes ~10 minutes.
+The installer handles BTRFS partitioning, GPU drivers, dotfiles and systemd-boot. On the first boot with internet, HarnessOS finishes itself: AI CLIs, tuned local models, MCP wiring.
 
 ---
 
 ## The `harness` CLI
 
-One command as the central interface to everything:
-
 ```bash
-harness info                           # hardware, kernel, services, Ollama models
-harness doctor                         # verify all tools — shows fix hints for failures
-harness setup                          # wizard: GitHub, Claude, Ollama model
-harness update                         # safe update: snapshot before, verify after
+harness doctor                         # verify GPU, Docker, Ollama, Claude — with fix hints
+harness setup                          # authenticate GitHub, Claude, pull models
+harness update                         # snapshot → update → verify
 harness snapshot -m "before refactor"  # manual BTRFS snapshot
-harness snapshot --list                # list all snapshots
-harness install web                    # add Web Dev profile
-harness install ml                     # add ML/CUDA profile
-harness install devops                 # add DevOps profile
-harness install security               # add Security profile
+harness install ml                     # add a developer profile
 harness ai                             # system-aware AI chat
-harness ai --explain "docker rm -f …" # explain a command before running
-```
-
-`harness doctor` example:
-
-```
-  GPU:     NVIDIA RTX 4080 — nvidia-dkms 560.x installed
-  Docker:  running v26.1
-  Ollama:  running — llama3.2 (2.0 GB)
-  Claude:  authenticated
-  Git:     2.45.2
-  Node:    v22.4.0
-  pnpm:    not found — run: harness install web
 ```
 
 ---
 
-## `harness ai` — AI That Sees Your System
+## Harness AI — an AI that sees your system
 
-Unlike a generic chatbot, `harness ai` injects your real system state into every conversation: kernel version, disk usage, failed services, running containers, and your last 20 shell commands.
+ChatGPT doesn't know your kernel. Copilot can't read your journal. **Harness AI runs on your machine and knows it** — kernel, failed services, containers, GPU, disks, and your last 20 commands are injected into every conversation.
 
 ```
-$ harness ai
-Model: llama3.2  |  Session: 2026-06-23-001
+❯ harness ai
+⬡ HarnessOS AI  (qwen2.5-coder:7b)
 
-You: why is docker failing to start?
+you › why is docker failing to start?
 
-  I can see from your system state that docker.service entered a
-  failed state 3 minutes ago. The journal shows a conflict with
-  the rootless socket. Run these to fix it:
+  Your journal shows docker.service failed 3 minutes ago with a
+  conflict on the rootless socket. Your user is not in the docker
+  group yet — that's the root cause.
 
-    [1]  sudo systemctl restart docker
-    [2]  sudo usermod -aG docker $USER && newgrp docker
+    [1]  sudo usermod -aG docker $USER && newgrp docker
+    [2]  sudo systemctl restart docker
 
-  Run which command? [1/2/a/n] > 1
+  Run which? [1/2/a/n] > a  ✓
 ```
 
-- Commands require your approval before executing
-- Conversation saved to `~/.local/share/harness/ai-sessions/`
-- Model configurable in `~/.config/harness/config.toml`
-- Waybar shows live Ollama status — click to open `harness ai`
-- `SUPER+A` opens it instantly from anywhere on the desktop
-
----
-
-## The Local AI Brain
-
-Since v2026.07.02.1, Ollama is wired into the whole system as a single local brain: one model-routing config, one system-context server, every tool connected. 100% local — no API key, no cost, nothing leaves your machine.
-
-### Shell AI
-
-| Command | What it does |
-|---------|--------------|
-| `wtf` | Diagnoses the last failed command — exit code and live system context included |
-| `ask "question"` | One-shot answer with real system context |
-| `Ctrl+X Ctrl+A` | Explains the command typed at the prompt, without losing your input |
-
-When a command fails, the shell hints: `↯ exit 127 — escribe 'wtf' para diagnóstico con IA`.
-
-### Hardware-tuned models — `harness-tune-ai`
-
-On first boot, HarnessOS detects GPU VRAM and RAM, then writes the optimal model tier to `~/.config/harness/config.toml` — from `qwen2.5-coder:3b` on modest laptops to `qwen3:27b` on big GPUs. CPU-only machines automatically avoid slow reasoning models for interactive diagnosis. The chosen models are pre-pulled in the background so the first `wtf` doesn't stall on a download.
-
-### System MCP server — `harness-mcp`
-
-A zero-dependency MCP server exposes **read-only** system tools — journal, service status, pacman, docker, local Ollama models — to any AI agent. Claude Code gets it registered automatically on first boot; OpenCode loads it from its config. Your agents see the real machine; anything that *mutates* the system still goes through your approval.
-
-### Editors, preconfigured
-
-- **OpenCode** (`opencode`) — local Ollama provider + `harness-mcp`, zero config
-- **VS Code + Continue** — auto-detects every local Ollama model (installed from Open VSX on first boot)
-
----
-
-## What Ships Pre-installed
-
-### AI Tools
-
-| Tool | Command | Notes |
-|------|---------|-------|
-| harness ai | `harness ai` | System-aware chat — sees kernel, services, Docker, history |
-| Shell AI | `wtf`, `ask` | Diagnose the last failure / ask with system context |
-| Claude CLI | `claude` | AI pair programmer by Anthropic — `harness-mcp` preconnected |
-| OpenCode | `opencode` | AI coding agent — preconfigured for local Ollama + `harness-mcp` |
-| Continue | VS Code | Chat/edit/autocomplete against local Ollama (auto-detect) |
-| Ollama | `ollama` | Run LLMs locally — models auto-tuned to your hardware |
-| harness-mcp | `harness-mcp` | System-context MCP server for any AI agent (read-only) |
-| GitHub Copilot | `gh copilot` | Copilot from the terminal |
-
-### Desktop
-
-| Tool | Notes |
-|------|-------|
-| Hyprland | Tiling Wayland compositor — fast, GPU-rendered |
-| Waybar | Top bar: workspaces, Ollama status, clock, volume |
-| Kitty | GPU-accelerated terminal, Tokyo Night theme |
-| Firefox | Browser |
-| VS Code | Editor |
-| Wofi | App launcher |
-
-### TUI Tools
-
-| Alias | Tool | What it does |
-|-------|------|-------------|
-| `lg` | lazygit | Git staging, commits, diffs, branches |
-| `lzd` | lazydocker | Docker containers, images, logs |
-| `y` | yazi | File manager — exits and `cd`s to last dir |
-| `z <dir>` | zoxide | Smart `cd` — learns your most-used dirs |
-| `top` | bottom | Process and resource monitor |
-| `logs` | lnav | Log file navigator with filtering |
-| `k` | k9s | Kubernetes cluster TUI |
-| `vim` | neovim | Editor with LSP + Copilot |
-
-Shell aliases: `ls` → eza, `cat` → bat, `d` → docker, `dc` → docker compose.
-
-### Dev Stack
-
-| Stack | What's included |
-|-------|----------------|
-| Python 3 | pip, pipx, uv, virtualenv |
-| Node.js LTS | npm, pnpm, TypeScript, ts-node, tsx |
-| Containers | Docker + Compose + nvidia-container-runtime |
-| Java | OpenJDK + Maven |
-| .NET | SDK |
-| PHP | + Composer |
-| Kubernetes | kubectl |
+- Modes for code, diagnosis, log analysis and commit messages — each routed to the best local model
+- Suggested commands always require your approval
+- Sessions saved locally · `SUPER+A` opens it from anywhere
 
 ---
 
 ## Developer Profiles
 
-Install additional tool stacks after initial setup:
+One command turns the base system into your specialty:
 
-```bash
-harness install web       # pnpm, Bun, TypeScript, Next.js, Vercel, Tailwind
-harness install ml        # CUDA, PyTorch, Jupyter, pandas, transformers, huggingface
-harness install devops    # Terraform, Ansible, Helm, kubectx, AWS CLI
-harness install security  # nmap, Wireshark, hashcat, John, sqlmap, gobuster
-```
-
----
-
-## Keybindings
-
-| Keys | Action |
-|------|--------|
-| `Super + Return` | Terminal (Kitty) |
-| `Super + A` | HarnessOS AI (`harness ai`) |
-| `Super + C` | Claude CLI |
-| `Super + O` | Ollama chat |
-| `Super + R` | App launcher (Wofi) |
-| `Super + B` | Firefox |
-| `Super + E` | VS Code |
-| `Super + H/J/K/L` | Focus window (vim-style) |
-| `Super + 1–4` | Switch workspace |
-| `Super + Shift + 1–4` | Move window to workspace |
-| `Super + W` | Close window |
-| `Super + F` | Fullscreen |
-| `Print` | Screenshot (select area) |
+| | Profile | What you get |
+|--|---------|--------------|
+| 🌐 | `harness install web` | pnpm · Bun · TypeScript · Next.js · Vercel · Tailwind |
+| 🧠 | `harness install ml` | CUDA · PyTorch · Jupyter · pandas · transformers · Hugging Face |
+| ☁️ | `harness install devops` | Terraform · Ansible · Helm · kubectx · AWS CLI |
+| 🔐 | `harness install security` | nmap · Wireshark · hashcat · John · sqlmap · gobuster |
 
 ---
 
-## Build from Source
+## What Ships Preinstalled
 
-**Any Linux host with Docker (Arch not required):**
+**AI** — Claude CLI, OpenCode, Continue (VS Code), Copilot CLI, Ollama with hardware-tuned models, `harness-mcp`.
+
+**Terminal** — Kitty + zsh + Starship, tmux, and a full TUI suite (`lg` lazygit, `lzd` lazydocker, `y` yazi, `k` k9s, `logs` lnav, `top` bottom). Modern replacements everywhere: eza, bat, ripgrep, fd, zoxide, fzf.
+
+**Languages & runtimes** — Python (pip, pipx, uv), Node.js LTS (npm, pnpm, tsx), Java + Maven, .NET SDK, PHP + Composer, Docker + Compose, kubectl.
+
+**Desktop** — Hyprland, Waybar, Wofi, Firefox, VS Code — themed and keybound out of the box.
+
+---
+
+## Screenshots
+
+![harness ai](docs/screenshots/harness-ai.png)
+*`harness ai` — context-aware session, first run pulls the model automatically*
+
+![Split view](docs/screenshots/desktop-split.png)
+*Terminal beside Firefox in Hyprland*
+
+![Dual AI](docs/screenshots/harness-ai-split.jpg)
+*Two concurrent AI conversations, side by side*
+
+---
+
+## Build From Source
 
 ```bash
-git clone https://github.com/Codigo-Free/HarnessOS.git
-cd HarnessOS
-./scripts/build-docker.sh
-```
+git clone https://github.com/Codigo-Free/HarnessOS.git && cd HarnessOS
 
-**Arch Linux host:**
-```bash
-sudo ./scripts/build.sh
-```
-
-**Test in QEMU after building:**
-```bash
-./scripts/test-qemu.sh
+./scripts/build-docker.sh   # any Linux with Docker
+sudo ./scripts/build.sh     # native Arch Linux
+./scripts/test-qemu.sh      # boot-test the ISO
 ```
 
 ---
 
 ## Technical Notes
 
-**BTRFS subvolume layout:**
+| Decision | Choice | Why |
+|----------|--------|-----|
+| Kernel | linux-zen | lower desktop latency |
+| NVIDIA | `nvidia-dkms`, auto-detected | survives zen kernel updates |
+| Filesystem | BTRFS: `@ @home @var @var_log @snapshots @swap` | zstd compression + snapshot isolation |
+| Snapshots | snapper + snap-pac | every pacman transaction is reversible |
+| Swap | dedicated `@swap` subvolume, NoCoW | safe swapfile on BTRFS |
 
-| Subvolume | Mount | Mount options |
-|-----------|-------|---------------|
-| `@` | `/` | `noatime,compress=zstd:1,space_cache=v2` |
-| `@home` | `/home` | same |
-| `@var` | `/var` | same |
-| `@var_log` | `/var/log` | same |
-| `@snapshots` | `/.snapshots` | snapper snapshot storage |
-| `@swap` | `/swap` | `chattr +C` (NoCoW — required for swapfile on BTRFS) |
-
-**NVIDIA:** Always installs `nvidia-dkms` (not `nvidia`) — required for the linux-zen kernel. Docker is automatically configured with `nvidia-container-runtime`.
-
-**Snapshots:** Every `pacman` transaction triggers pre/post snapshots via `snap-pac`. Roll back with:
-```bash
-snapper list
-snapper undochange 42..43
-```
+Roll back anything: `snapper list && snapper undochange 42..43`
 
 ---
 
 ## Documentation
 
-| Doc | Description |
-|-----|-------------|
-| [Overview](docs/01-overview.md) | What is HarnessOS, design principles, target audience |
-| [Building](docs/02-building.md) | Build from source — Docker or native Arch |
-| [Live Environment](docs/03-live-environment.md) | Keybindings, Waybar, TUI tools, first-boot setup |
-| [Installation](docs/04-installation.md) | TUI installer walkthrough, disk layout, GPU setup |
-| [AI Tools](docs/05-ai-tools.md) | Claude, Ollama, harness ai — usage and configuration |
-| [Troubleshooting](docs/06-troubleshooting.md) | Boot, login, build issues and solutions |
-| [Changelog](CHANGELOG.md) | Version history |
+[Overview](docs/01-overview.md) · [Building](docs/02-building.md) · [Live Environment](docs/03-live-environment.md) · [Installation](docs/04-installation.md) · [AI Tools](docs/05-ai-tools.md) · [Troubleshooting](docs/06-troubleshooting.md) · [Changelog](CHANGELOG.md) · [Wiki](https://github.com/Codigo-Free/HarnessOS/wiki)
+
+---
+
+## Roadmap
+
+- [x] Harness AI — system-aware chat
+- [x] Local AI brain — one routing layer for every tool
+- [x] Shell AI — `wtf`, `ask`, explain-before-run
+- [x] MCP system server for Claude Code, OpenCode & any agent
+- [x] Hardware-tuned model selection
+- [ ] AI workflows — multi-step tasks from the shell
+- [ ] Plugin marketplace for profiles & tools
+- [ ] GUI configuration center
+- [ ] Encrypted settings sync
+- [ ] Multi-agent collaboration on one system context
 
 ---
 
 ## Contributing
 
-Pull requests are welcome — packages, dotfile improvements, new profiles, bug fixes.
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test, and submit changes.
+PRs welcome — packages, profiles, dotfiles, bug fixes. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+
+If HarnessOS saved you a weekend of setup, **star the repo** — it helps other developers find it. ⭐
 
 ---
 
-## License
+<div align="center">
 
 GPL-2.0 © [Codigo-Free](https://github.com/Codigo-Free)
+
+**HarnessOS — stop configuring. Start building.**
+
+</div>
