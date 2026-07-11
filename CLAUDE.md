@@ -39,6 +39,7 @@ Repository: https://github.com/Codigo-Free/HarnessOS
 - `archiso/airootfs/` — Files overlaid onto live system root
 - `archiso/airootfs/root/customize_airootfs.sh` — Post-build chroot hook (CRITICAL)
 - `installer/harness_installer/` — Python TUI installer
+- `galago/` — **git submodule** (https://github.com/Codigo-Free/galago), the Galaga-style easter egg (`SUPER+SHIFT+CTRL+G`, see `archiso/airootfs/usr/local/bin/harness-easter-egg`). Edit/contribute inside `galago/` like a normal clone of that repo — commit and push there, not in HarnessOS. Bump the submodule pointer here (`cd galago && git checkout <ref> && cd .. && git add galago`) to pull in upstream changes. Clone HarnessOS with `git clone --recurse-submodules`, or after a plain clone run `git submodule update --init`.
 - `dotfiles/` — All user configs (stow packages)
 - `scripts/build-docker.sh` — Primary build method on this machine
 - `scripts/lib/detect.sh` — GPU detection library (sourced by other scripts)
@@ -71,6 +72,7 @@ Ollama es el backend único; una config central + un servidor MCP conectan todas
 **Desde live USB (entorno actual):**
 1. Edit files in this repo
 2. Inyectar installer: `TARGET=archiso/airootfs/usr/local/lib/harness/installer; rm -rf $TARGET; mkdir -p $TARGET; cp -r installer/harness_installer $TARGET/; cp installer/requirements.txt $TARGET/`
+2b. Inyectar galago (submódulo): `TARGET=archiso/airootfs/usr/local/share/harness/easter-egg/galago; rm -rf $TARGET; mkdir -p $TARGET; cp -r galago/galago.py galago/src galago/assets $TARGET/`
 3. `sudo pacman -Sy archiso` (solo primera vez; requiere mirrorlist activo)
 4. `mkdir -p out && sudo mkarchiso -v -w /tmp/harness-work -o ./out ./archiso`
 5. Flashear: `sudo dd if=out/*.iso of=/dev/sdb bs=4M status=progress oflag=sync` (reemplaza el USB actual — guardar cambios antes)
@@ -91,6 +93,13 @@ cp -r installer/harness_installer "$TARGET/"
 cp    installer/requirements.txt   "$TARGET/"
 ```
 The `airootfs/usr/local/lib/harness/installer/` path is gitignored — it's generated at build time.
+
+**CRITICAL — galago (easter egg) injection**: same pattern, both workflows checkout with `submodules: true` (needs `git` installed in the `archlinux:latest` container *before* the checkout step) and then run:
+```bash
+TARGET="archiso/airootfs/usr/local/share/harness/easter-egg/galago"
+cp -r galago/galago.py galago/src galago/assets "$TARGET/"
+```
+`archiso/airootfs/usr/local/share/harness/easter-egg/galago/` is gitignored — generated at build time from the `galago/` submodule. `archiso/airootfs/usr/local/share/harness/easter-egg/portrait.png` is NOT part of this — it's a HarnessOS-specific portrait override that `galago`'s intro screen checks for by absolute path before falling back to its own bundled portrait.
 
 **GitHub Secrets required** (set at https://github.com/Codigo-Free/HarnessOS/settings/secrets/actions):
 

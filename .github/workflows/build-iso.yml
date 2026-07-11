@@ -7,10 +7,12 @@ on:
       - 'archiso/**'
       - 'installer/**'
       - 'dotfiles/**'
+      - 'galago'
   pull_request:
     paths:
       - 'archiso/**'
       - 'installer/**'
+      - 'galago'
   workflow_dispatch:
 
 jobs:
@@ -22,8 +24,13 @@ jobs:
       options: --privileged
 
     steps:
+      - name: Install git (needed for submodule checkout)
+        run: pacman -Sy --noconfirm git
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install archiso
         run: pacman -Sy --noconfirm archiso mkinitcpio-archiso
@@ -39,6 +46,15 @@ jobs:
           cp -r installer/harness_installer "$TARGET/"
           cp    installer/requirements.txt   "$TARGET/"
           echo "Installer injected into $TARGET"
+
+      - name: Inject galago into airootfs
+        run: |
+          TARGET="archiso/airootfs/usr/local/share/harness/easter-egg/galago"
+          rm -rf "$TARGET"
+          mkdir -p "$TARGET"
+          cp -r galago/galago.py galago/src galago/assets "$TARGET/"
+          find "$TARGET" -name '__pycache__' -exec rm -rf {} +
+          echo "Galago injected into $TARGET"
 
       - name: Build ISO
         run: |

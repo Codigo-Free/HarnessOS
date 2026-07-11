@@ -9,6 +9,9 @@ work/
 # Installer copy injected into airootfs during build (generated, not source)
 archiso/airootfs/usr/local/lib/harness/installer/
 
+# Galago (easter egg) copy injected into airootfs during build (generated, not source)
+archiso/airootfs/usr/local/share/harness/easter-egg/galago/
+
 # Python
 __pycache__/
 *.pyc

@@ -25,6 +25,16 @@ cp -r "${ROOT_DIR}/installer/harness_installer" "${INSTALLER_TARGET}/"
 cp    "${ROOT_DIR}/installer/requirements.txt"   "${INSTALLER_TARGET}/"
 log_ok "Installer injected"
 
+# Copy galago into airootfs (easter egg, git submodule)
+log_step "Injecting galago into airootfs..."
+[[ -f "${ROOT_DIR}/galago/galago.py" ]] || die "galago/ submodule is empty — run: git submodule update --init"
+GALAGO_TARGET="${ROOT_DIR}/archiso/airootfs/usr/local/share/harness/easter-egg/galago"
+rm -rf "${GALAGO_TARGET}"
+mkdir -p "${GALAGO_TARGET}"
+cp -r "${ROOT_DIR}/galago/galago.py" "${ROOT_DIR}/galago/src" "${ROOT_DIR}/galago/assets" "${GALAGO_TARGET}/"
+find "${GALAGO_TARGET}" -name '__pycache__' -exec rm -rf {} +
+log_ok "Galago injected"
+
 log_info "Pulling archlinux:latest..."
 docker pull archlinux:latest
 

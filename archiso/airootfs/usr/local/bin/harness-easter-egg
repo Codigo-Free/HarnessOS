@@ -9,4 +9,4 @@ if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
     export SDL_AUDIODRIVER=pipewire
 fi
 
-exec python3 /usr/local/share/harness/easter-egg/galaga.py
+exec python3 /usr/local/share/harness/easter-egg/galago/galago.py

@@ -17,8 +17,13 @@ jobs:
       contents: write
 
     steps:
+      - name: Install git (needed for submodule checkout)
+        run: pacman -Sy --noconfirm git
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install archiso + ssh tools
         run: pacman -Sy --noconfirm archiso mkinitcpio-archiso openssh
@@ -30,6 +35,14 @@ jobs:
           mkdir -p "$TARGET"
           cp -r installer/harness_installer "$TARGET/"
           cp    installer/requirements.txt   "$TARGET/"
+
+      - name: Inject galago into airootfs
+        run: |
+          TARGET="archiso/airootfs/usr/local/share/harness/easter-egg/galago"
+          rm -rf "$TARGET"
+          mkdir -p "$TARGET"
+          cp -r galago/galago.py galago/src galago/assets "$TARGET/"
+          find "$TARGET" -name '__pycache__' -exec rm -rf {} +
 
       - name: Build ISO
         run: |

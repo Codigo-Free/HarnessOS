@@ -1,0 +1,3 @@
+[submodule "galago"]
+	path = galago
+	url = https://github.com/Codigo-Free/galago.git
