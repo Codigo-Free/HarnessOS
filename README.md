@@ -286,6 +286,12 @@ If HarnessOS saved you a weekend of setup, **star the repo** — it helps other 
 
 ---
 
+## Support this project
+
+If you'd like to support ongoing development, you can sponsor via [GitHub Sponsors](https://github.com/sponsors/Codigo-Free).
+
+---
+
 <div align="center">
 
 GPL-2.0 © [Codigo-Free](https://github.com/Codigo-Free)
