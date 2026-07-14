@@ -19,6 +19,13 @@ command -v starship &>/dev/null && eval "$(starship init zsh)"
 # Zoxide — smarter cd
 command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
 
+# FZF — Ctrl+R history search, Ctrl+T file insert, Alt+C fuzzy cd
+[[ -f /usr/share/fzf/key-bindings.zsh ]] && source /usr/share/fzf/key-bindings.zsh
+[[ -f /usr/share/fzf/completion.zsh ]]    && source /usr/share/fzf/completion.zsh
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
+
 # Yazi — file manager with dir-change on exit
 function y() {
     local tmp="$(mktemp -t 'yazi-cwd.XXXXXX')"
