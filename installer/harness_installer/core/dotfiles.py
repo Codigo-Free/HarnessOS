@@ -10,6 +10,7 @@ LIVE_CONFIGS = [
     ".config/waybar",
     ".config/kitty",
     ".config/wofi",
+    ".config/nvim",        # Treesitter, LSP, Telescope, Git (gitsigns), Copilot
     ".config/opencode",   # OpenCode → local Ollama + harness-mcp
     ".config/harness",    # model routing written by harness-tune-ai (if it ran)
     ".continue",          # Continue (VS Code) → local Ollama
